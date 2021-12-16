@@ -1,0 +1,23 @@
+{
+  "version": "0.2",
+  "ignorePaths": [],
+  "dictionaryDefinitions": [],
+  "dictionaries": [],
+  "words": [
+    "camelcase",
+    "checkin",
+    "datetime",
+    "eventbridge",
+    "getify",
+    "khtml",
+    "luxon",
+    "millis",
+    "openflights",
+    "parens",
+    "prettierrc",
+    "slsw",
+    "vite"
+  ],
+  "ignoreWords": ["iatafilter", "mweb", "requestfinished"],
+  "import": []
+}

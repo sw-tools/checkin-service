@@ -1,0 +1,87 @@
+service: checkin-service
+frameworkVersion: '>=2'
+configValidationMode: error
+
+provider:
+  name: aws
+  region: ${opt:region, 'us-west-2'}
+  stage: prod
+  environment:
+    AUTHORIZER_TOKEN: ${env:AUTHORIZER_TOKEN}
+    ACCOUNT_ID: ${aws:accountId}
+  deploymentBucket:
+    name: serverless-deployments
+  versionFunctions: false
+  apiName: ${self:provider.stage}
+  runtime: nodejs14.x
+  profile: sw-tools
+  memorySize: 128
+
+  iam:
+    role:
+      statements:
+        # ScheduleCheckin creates eventBridge rules
+        - Effect: Allow
+          Action:
+            - events:*
+          Resource: arn:aws:events:${self:provider.region}:${aws:accountId}:rule/*
+        # ScheduleCheckin adds permission for created eventBridge rules to invoke HandleScheduledCheckin
+        - Effect: Allow
+          Action:
+            - lambda:AddPermission
+          Resource: arn:aws:lambda:${self:provider.region}:${aws:accountId}:function:checkin-service-prod-HandleScheduledCheckin
+
+layers:
+  chromeAwsLambda:
+    package:
+      artifact: layers/chrome_aws_lambda.zip
+
+plugins:
+  - serverless-webpack
+
+package:
+  individually: true
+
+custom:
+  webpack:
+    keepOutputDirectory: true
+    webpackConfig: webpack.config.js
+    includeModules:
+      forceExclude:
+        - chrome-aws-lambda
+        - puppeteer-core
+
+functions:
+  Authorizer:
+    handler: src/handlers/authorizer.handle
+    description: Authorizes requests
+    timeout: 6
+
+  ScheduleCheckin:
+    handler: src/handlers/schedule-checkin.handle
+    description: Schedule a future checkin
+    timeout: 30
+    maximumRetryAttempts: 0
+    events:
+      - http:
+          method: put
+          path: v1/checkin-service/checkin
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - token
+          authorizer:
+            name: Authorizer
+            identitySource: method.request.header.token
+            resultTtlInSeconds: 0
+            type: request
+
+  HandleScheduledCheckin:
+    handler: src/handlers/handle-scheduled-checkin.handle
+    description: Handle a scheduled checkin
+    timeout: 600
+    memorySize: 1600
+    maximumRetryAttempts: 0
+    layers:
+      - { Ref: ChromeAwsLambdaLambdaLayer }

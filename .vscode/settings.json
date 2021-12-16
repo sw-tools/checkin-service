@@ -1,0 +1,42 @@
+{
+  "javascript.validate.enable": false,
+  "typescript.validate.enable": true,
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.tsdk": "./node_modules/typescript/lib",
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "typescript.suggest.completeFunctionCalls": true,
+  "eslint.lintTask.enable": true,
+  "typescript.surveys.enabled": false,
+  "npm.autoDetect": "on",
+  "git.inputValidationLength": 1000,
+  "git.inputValidationSubjectLength": 100,
+  "eslint.onIgnoredFiles": "off",
+  "editor.tabSize": 2,
+  "editor.detectIndentation": false,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": true,
+    "source.fixAll": true
+  },
+  "files.watcherExclude": {
+    ".git": true,
+    "node_modules": true
+  },
+  "files.exclude": {
+    ".git": true,
+    "dist": true,
+    "node_modules": true,
+    "package-lock.json": true,
+    ".eslintignore": true,
+    ".eslintrc.js": true,
+    ".prettierrc.yml": true,
+    ".gitignore": true,
+    "tsconfig.json": true,
+    ".serverless": true,
+    ".webpack": true,
+    "webpack.config.js": true,
+    "layers": true
+  },
+  "tsInterfaceSorter.emptyLineBetweenProperties": false
+}

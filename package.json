@@ -1,0 +1,58 @@
+{
+  "name": "@sw-tools/check-in-service",
+  "version": "1.0.0",
+  "description": "Checks user into sw flight",
+  "main": "dist/index.js",
+  "scripts": {
+    "compile": "rm -rf dist && tsc",
+    "watch": "rm -rf dist && tsc -w true",
+    "lint": "eslint --ext ts src/*",
+    "fix": "prettier --config .prettierrc.yml 'src/**/*.ts' --write",
+    "deploy": "npm run lint && SLS_DEBUG=* serverless deploy --verbose",
+    "serverless-package": "SLS_DEBUG=* serverless package",
+    "info": "serverless info"
+  },
+  "config": {
+    "fund": false
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sw-tools/check-in-service.git"
+  },
+  "author": "SW Tools Team <maltose-01grooves@icloud.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sw-tools/check-in-service/issues"
+  },
+  "homepage": "https://github.com/sw-tools/check-in-service#readme",
+  "devDependencies": {
+    "@getify/eslint-plugin-proper-arrows": "^11.0.3",
+    "@tsconfig/node16": "^1.0.2",
+    "@types/aws-lambda": "^8.10.84",
+    "@types/eslint": "^8.2.0",
+    "@types/luxon": "^2.0.7",
+    "@types/node": "^16.11.11",
+    "@types/uuid": "^8.3.3",
+    "@typescript-eslint/eslint-plugin": "^5.5.0",
+    "@typescript-eslint/parser": "^5.5.0",
+    "eslint": "^8.3.0",
+    "eslint-plugin-node": "^11.1.0",
+    "prettier": "^2.5.1",
+    "puppeteer": "^13.0.0",
+    "serverless": "^2.63.0",
+    "serverless-webpack": "^5.5.5",
+    "ts-loader": "^9.2.6",
+    "typescript": "^4.5.2",
+    "webpack": "^5.59.0",
+    "webpack-cli": "^4.9.1",
+    "webpack-node-externals": "^3.0.0"
+  },
+  "dependencies": {
+    "@aws-sdk/client-eventbridge": "^3.43.0",
+    "@aws-sdk/client-lambda": "^3.43.0",
+    "chrome-aws-lambda": "^10.1.0",
+    "got": "^11.8.3",
+    "luxon": "^2.1.1",
+    "uuid": "^8.3.2"
+  }
+}
