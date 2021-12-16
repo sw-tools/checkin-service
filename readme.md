@@ -10,9 +10,15 @@ Uses airline's API in an unsupported manner. Use at your own risk.
 
 ## Deployment
 
-```sh
-AUTHORIZER_TOKEN=your_chosen_token npm run deploy
-```
+1. Build Chromium/Puppeteer Lambda layer: https://github.com/alixaxel/chrome-aws-lambda#aws-lambda-layer
+
+1. Copy chrome_aws_lambda.zip to `layers/chrome_aws_lambda.zip`
+
+1. Deploy to AWS (ensure you've got your AWS credentials configured first)
+
+   ```sh
+   AUTHORIZER_TOKEN=your_chosen_token npm run deploy
+   ```
 
 ## Scheduling a Checkin
 
@@ -25,5 +31,6 @@ See [src/handlers/schedule-checkin.ts](src/handlers/schedule-checkin.ts)
 
 ## TODO
 
+- Try a publicly maintained Lambda layer for Puppeteer/Chromium (e.g. https://github.com/shelfio/chrome-aws-lambda-layer)
 - Try Vite as a replacement for Webpack
 - Use Serverless V3
