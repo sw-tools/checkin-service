@@ -1,5 +1,6 @@
 {
   "name": "@sw-tools/check-in-service",
+  "private": true,
   "version": "1.0.0",
   "description": "Checks user into sw flight",
   "main": "dist/index.js",
