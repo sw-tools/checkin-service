@@ -10,11 +10,12 @@ Uses airline's API in an unsupported manner. Use at your own risk.
 
 ## Deployment
 
-1. Build Chromium/Puppeteer Lambda layer: https://github.com/alixaxel/chrome-aws-lambda#aws-lambda-layer
+1. Add Chromium/Puppeteer Lambda layer:
 
-1. Copy chrome_aws_lambda.zip to `layers/chrome_aws_lambda.zip`
+   - Build `chrome_aws_lambda.zip`: https://github.com/alixaxel/chrome-aws-lambda#aws-lambda-layer
+   - Copy `chrome_aws_lambda.zip` to `layers/chrome_aws_lambda.zip`
 
-1. Deploy to AWS (ensure you've got your AWS credentials configured first)
+1. Deploy service to AWS (ensure you've got your AWS credentials configured first)
 
    ```sh
    AUTHORIZER_TOKEN=your_chosen_token npm run deploy
