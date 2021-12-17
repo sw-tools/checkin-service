@@ -23,7 +23,7 @@ Uses airline's API in an unsupported manner. Use at your own risk.
 
 ## Scheduling a Checkin
 
-See [src/handlers/schedule-checkin.ts](src/handlers/schedule-checkin.ts)
+See [src/scripts/lambda/schedule-checkin.ts](src/scripts/lambda/schedule-checkin.ts)
 
 ## Attributions
 
@@ -32,6 +32,8 @@ See [src/handlers/schedule-checkin.ts](src/handlers/schedule-checkin.ts)
 
 ## TODO
 
+- Save authorization token to a file and re-use it in serverless.yml so that user does not have to input it for every command
+- Delete EventBridge event after checkin
 - Try a publicly maintained Lambda layer for Puppeteer/Chromium (e.g. https://github.com/shelfio/chrome-aws-lambda-layer)
 - Try Vite as a replacement for Webpack
 - Use Serverless V3
