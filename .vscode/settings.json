@@ -29,7 +29,6 @@
     "node_modules": true,
     "package-lock.json": true,
     ".eslintignore": true,
-    ".eslintrc.js": true,
     ".prettierrc.yml": true,
     ".gitignore": true,
     "tsconfig.json": true,

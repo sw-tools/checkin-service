@@ -111,7 +111,21 @@ const config = {
       }
     ],
     'no-throw-literal': 'off',
-    '@typescript-eslint/no-throw-literal': ['error']
+    '@typescript-eslint/no-throw-literal': ['error'],
+    // styles: minimal - handled by prettier wherever possible
+    'max-len': [
+      'error',
+      100,
+      2,
+      {
+        ignoreUrls: true,
+        ignoreComments: false,
+        ignoreTrailingComments: false,
+        ignoreRegExpLiterals: false,
+        ignoreStrings: false,
+        ignoreTemplateLiterals: false
+      }
+    ]
   }
 };
 

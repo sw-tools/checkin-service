@@ -78,8 +78,8 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     hours: 24
   });
 
-  // start checking in 24 hours and 5 minutes early (5 minutes gives time for Lambda cold start,
-  // EventBridge trigger, generating advanced Southwest headers, etc.)
+  // start checking in 24 hours and 5 minutes early (5 minutes gives time for EventBridge trigger
+  //Lambda cold start, generating advanced Southwest headers, etc.)
   const scheduleDateTime = checkinAvailableDateTime.minus({ minutes: 5 });
 
   // TODO: hash first and last name into a single string
@@ -115,7 +115,9 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     Targets: [
       {
         Id: randomId,
-        Arn: `arn:aws:lambda:${process.env.AWS_REGION}:${process.env.ACCOUNT_ID}:function:checkin-service-prod-HandleScheduledCheckin`,
+        Arn:
+          `arn:aws:lambda:${process.env.AWS_REGION}:${process.env.ACCOUNT_ID}:` +
+          `function:checkin-service-prod-HandleScheduledCheckin`,
         Input: JSON.stringify(detail)
       }
     ]
