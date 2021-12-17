@@ -53,6 +53,7 @@
     "@aws-sdk/client-lambda": "^3.43.0",
     "chrome-aws-lambda": "^10.1.0",
     "got": "^11.8.3",
+    "http-status": "^1.5.0",
     "luxon": "^2.1.1",
     "uuid": "^8.3.2"
   }

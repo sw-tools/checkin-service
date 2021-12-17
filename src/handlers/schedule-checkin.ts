@@ -2,6 +2,7 @@ import * as EventBridge from '@aws-sdk/client-eventbridge';
 import * as Lambda from '@aws-sdk/client-lambda';
 import AWSLambda from 'aws-lambda';
 import console from 'console';
+import HttpStatus from 'http-status';
 import * as Luxon from 'luxon';
 import * as process from 'process';
 import * as Uuid from 'uuid';
@@ -32,7 +33,7 @@ export async function handle(event: AWSLambda.APIGatewayProxyEvent) {
     console.error(error);
 
     const result: AWSLambda.APIGatewayProxyResult = {
-      statusCode: 500,
+      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       headers: ResponseUtils.getStandardResponseHeaders(),
       body: JSON.stringify({ error: 'Internal server error' })
     };
@@ -48,7 +49,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 
   if (!isRequestBody(requestBody)) {
     const result: AWSLambda.APIGatewayProxyResult = {
-      statusCode: 422,
+      statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
       headers: ResponseUtils.getStandardResponseHeaders(),
       body: JSON.stringify({ error: 'Invalid parameters', error_code: 'invalid_parameters' })
     };
@@ -66,7 +67,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 
   if (!firstLegDepartureDate) {
     const result: AWSLambda.APIGatewayProxyResult = {
-      statusCode: 422,
+      statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
       headers: ResponseUtils.getStandardResponseHeaders(),
       body: JSON.stringify({ error: 'No future legs found', error_code: 'no_future_legs' })
     };
@@ -78,8 +79,8 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     hours: 24
   });
 
-  // start checking in 24 hours and 5 minutes early (5 minutes gives time for EventBridge trigger
-  //Lambda cold start, generating advanced Southwest headers, etc.)
+  // start checking in 5 minutes early (gives time for EventBridge trigger, Lambda cold start,
+  // generating advanced checkin headers, etc.)
   const scheduleDateTime = checkinAvailableDateTime.minus({ minutes: 5 });
 
   // TODO: hash first and last name into a single string
@@ -95,51 +96,21 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 
   console.debug('cronExpression', cronExpression);
 
-  const client = new EventBridge.EventBridgeClient({});
-
-  const putRuleCommand = new EventBridge.PutRuleCommand({
-    Name: ruleName,
-    ScheduleExpression: `cron(${cronExpression})`
-  });
-  await client.send(putRuleCommand);
+  await putRule(ruleName, cronExpression);
 
   const detail: EventDetail.Detail = {
     reservation,
     checkin_time_epoch: checkinAvailableDateTime.toSeconds()
   };
 
-  const randomId = Uuid.v4();
+  const targetId = Uuid.v4();
 
-  const putTargetsCommand = new EventBridge.PutTargetsCommand({
-    Rule: ruleName,
-    Targets: [
-      {
-        Id: randomId,
-        Arn:
-          `arn:aws:lambda:${process.env.AWS_REGION}:${process.env.ACCOUNT_ID}:` +
-          `function:checkin-service-prod-HandleScheduledCheckin`,
-        Input: JSON.stringify(detail)
-      }
-    ]
-  });
-  await client.send(putTargetsCommand);
+  await putTarget(ruleName, targetId, detail);
 
-  const lambda = new Lambda.Lambda({});
-
-  const addPermissionCommand = new Lambda.AddPermissionCommand({
-    FunctionName: 'checkin-service-prod-HandleScheduledCheckin',
-    StatementId: randomId,
-    Action: 'lambda:InvokeFunction',
-    Principal: 'events.amazonaws.com',
-    SourceArn: `arn:aws:events:${process.env.AWS_REGION}:${process.env.ACCOUNT_ID}:rule/${ruleName}`
-  });
-
-  await lambda.send(addPermissionCommand);
-
-  Lambda.AddPermissionCommand;
+  await addLambdaPermission(ruleName, targetId);
 
   const result: AWSLambda.APIGatewayProxyResult = {
-    statusCode: 204,
+    statusCode: HttpStatus.NO_CONTENT,
     headers: ResponseUtils.getStandardResponseHeaders(),
     body: undefined
   };
@@ -171,6 +142,50 @@ async function findFirstLegDate(reservation: Reservation.Reservation) {
   }
 
   return Luxon.DateTime.min(...validLegs).toJSDate();
+}
+
+function putRule(ruleName: string, cronExpression: string) {
+  const client = new EventBridge.EventBridgeClient({});
+
+  const putRuleCommand = new EventBridge.PutRuleCommand({
+    Name: ruleName,
+    ScheduleExpression: `cron(${cronExpression})`
+  });
+
+  return client.send(putRuleCommand);
+}
+
+function putTarget(ruleName: string, targetId: string, detail: Record<string, any>) {
+  const client = new EventBridge.EventBridgeClient({});
+
+  const putTargetsCommand = new EventBridge.PutTargetsCommand({
+    Rule: ruleName,
+    Targets: [
+      {
+        Id: targetId,
+        Arn:
+          `arn:aws:lambda:${process.env.AWS_REGION}:${process.env.ACCOUNT_ID}:` +
+          `function:checkin-service-prod-HandleScheduledCheckin`,
+        Input: JSON.stringify(detail)
+      }
+    ]
+  });
+
+  return client.send(putTargetsCommand);
+}
+
+function addLambdaPermission(ruleName: string, targetId: string) {
+  const lambda = new Lambda.Lambda({});
+
+  const addPermissionCommand = new Lambda.AddPermissionCommand({
+    FunctionName: 'checkin-service-prod-HandleScheduledCheckin',
+    StatementId: targetId,
+    Action: 'lambda:InvokeFunction',
+    Principal: 'events.amazonaws.com',
+    SourceArn: `arn:aws:events:${process.env.AWS_REGION}:${process.env.ACCOUNT_ID}:rule/${ruleName}`
+  });
+
+  return lambda.send(addPermissionCommand);
 }
 
 function isRequestBody(value: any): value is RequestBody {
