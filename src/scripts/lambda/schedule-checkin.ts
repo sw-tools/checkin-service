@@ -1,5 +1,6 @@
 import console from 'console';
 import Got from 'got';
+import * as Luxon from 'luxon';
 import * as process from 'process';
 
 /**
@@ -13,7 +14,7 @@ import * as process from 'process';
  */
 async function main() {
   try {
-    const result = await Got.put(
+    const result = await Got.put<ResponseBody>(
       `https://${process.env.API_PREFIX}.execute-api.${process.env.REGION}.amazonaws.com/prod/v1/checkin-service/checkin`,
       {
         headers: { token: process.env.AUTHORIZER_TOKEN },
@@ -27,11 +28,29 @@ async function main() {
       }
     );
 
-    console.debug(result.body);
-    console.log('success');
+    const checkinAvailable = Luxon.DateTime.fromSeconds(
+      result.body.data.checkin_available_epoch
+    ).toLocaleString(Luxon.DateTime.DATETIME_FULL_WITH_SECONDS);
+
+    const checkinBoot = Luxon.DateTime.fromSeconds(
+      result.body.data.checkin_boot_epoch
+    ).toLocaleString(Luxon.DateTime.DATETIME_FULL_WITH_SECONDS);
+
+    console.log(
+      'Will boot at %s to get ready to attempt checkin. Your checkin is available at',
+      checkinBoot,
+      checkinAvailable
+    );
   } catch (error) {
     console.error(error.response?.body);
   }
+}
+
+interface ResponseBody {
+  data: {
+    checkin_available_epoch: number;
+    checkin_boot_epoch: number;
+  };
 }
 
 main().catch(console.error);
