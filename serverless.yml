@@ -9,8 +9,6 @@ provider:
   environment:
     AUTHORIZER_TOKEN: ${env:AUTHORIZER_TOKEN}
     ACCOUNT_ID: ${aws:accountId}
-  deploymentBucket:
-    name: serverless-deployments
   versionFunctions: false
   apiName: ${self:provider.stage}
   runtime: nodejs14.x
