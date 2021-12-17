@@ -26,7 +26,7 @@ export async function handle(event: EventDetail.Detail) {
 const waitMs = util.promisify(setTimeout);
 
 async function handleInternal(event: EventDetail.Detail) {
-  console.debug('Checking in based on reservation %s', JSON.stringify(event.reservation, null, 2));
+  console.log('event.reservation', JSON.stringify(event.reservation, null, 2));
 
   const advancedHeaders = await SwGenerateHeaders.generateHeaders(event.reservation);
 
@@ -34,40 +34,40 @@ async function handleInternal(event: EventDetail.Detail) {
 
   const checkinDateTime = Luxon.DateTime.fromSeconds(event.checkin_available_epoch);
 
-  const timeUntilCheckinDuration = checkinDateTime.diffNow();
+  // start trying to check in 5 seconds before checkin time
+  const startTryingCheckinDateTime = checkinDateTime.minus({ seconds: 5 });
 
-  // start checking in 5 seconds before checkin time
-  const millisBeforeCheckinAttempts = timeUntilCheckinDuration.minus({ seconds: 5 }).toMillis();
+  const millisUntilTryingCheckin = startTryingCheckinDateTime.diffNow().toMillis();
 
-  console.debug('millisBeforeCheckinAttempts', millisBeforeCheckinAttempts);
+  console.debug('millisUntilTryingCheckin', millisUntilTryingCheckin);
 
   // this is the normal flow; we expect to have some extra time to wait
-  if (millisBeforeCheckinAttempts > 0) {
+  if (millisUntilTryingCheckin > 0) {
     console.debug(
       'Waiting %d seconds before checking in',
-      Math.floor(millisBeforeCheckinAttempts / 1000)
+      Math.floor(millisUntilTryingCheckin / 1000)
     );
 
     // waitMs will always "win" because logTimeForever will never resolve
     await Promise.race([
-      waitMs(millisBeforeCheckinAttempts),
-      logTimeUntilDateForever(checkinDateTime.toJSDate())
+      waitMs(millisUntilTryingCheckin),
+      logSecondsUntilAttemptingCheckinForever(startTryingCheckinDateTime.toJSDate())
     ]);
   }
 
-  console.debug('attempting checkin');
+  console.debug('starting checkin attempts at', Math.floor(Luxon.DateTime.now().toSeconds()));
 
   await CheckIn.checkIn(event.reservation, 0.25, 80, advancedHeaders, console);
 
   console.log('checkin succeeded');
 }
 
-async function logTimeUntilDateForever(date: Date) {
+async function logSecondsUntilAttemptingCheckinForever(date: Date) {
   while (true) {
     console.log('current time:', Luxon.DateTime.now().setZone('America/Denver').toISO());
 
     console.log(
-      'seconds until event:',
+      'attempting checkin in %d seconds',
       Math.floor(Luxon.DateTime.fromJSDate(date).diffNow().toMillis() / 1000)
     );
 
