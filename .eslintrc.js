@@ -98,18 +98,6 @@ const config = {
     radix: ['error', 'always'],
     'no-cond-assign': ['error', 'always'],
     eqeqeq: ['error', 'always'],
-    '@typescript-eslint/member-ordering': [
-      'error',
-      {
-        default: 'never',
-        interfaces: {
-          order: 'alphabetically'
-        },
-        typeLiterals: {
-          order: 'alphabetically'
-        }
-      }
-    ],
     'no-throw-literal': 'off',
     '@typescript-eslint/no-throw-literal': ['error'],
     // styles: minimal - handled by prettier wherever possible

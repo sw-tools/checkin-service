@@ -79,20 +79,18 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     hours: 24
   });
 
+  console.debug('firstLegDate', firstLegDepartureDate);
+
   // start checking in 5 minutes early (gives time for EventBridge trigger, Lambda cold start,
   // generating advanced checkin headers, etc.)
-  const scheduleDateTime = checkinAvailableDateTime.minus({ minutes: 5 });
+  const invokeLambdaDateTime = checkinAvailableDateTime.minus({ minutes: 5 });
 
   // TODO: hash first and last name into a single string
   const ruleName =
     `${reservation.confirmationNumber}-${reservation.firstName}-` +
-    `${reservation.lastName}-${scheduleDateTime.toSeconds()}`;
+    `${reservation.lastName}-${invokeLambdaDateTime.toSeconds()}`;
 
-  console.debug('firstLegDate', firstLegDepartureDate);
-
-  const tempDate = Luxon.DateTime.now().plus({ minutes: 1 });
-
-  const cronExpression = CronUtils.generateCronExpressionUtc(tempDate.toJSDate());
+  const cronExpression = CronUtils.generateCronExpressionUtc(invokeLambdaDateTime.toJSDate());
 
   console.debug('cronExpression', cronExpression);
 
@@ -100,7 +98,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 
   const detail: EventDetail.Detail = {
     reservation,
-    checkin_time_epoch: checkinAvailableDateTime.toSeconds()
+    checkin_available_epoch: checkinAvailableDateTime.toSeconds()
   };
 
   const targetId = Uuid.v4();
@@ -109,10 +107,17 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 
   await addLambdaPermission(ruleName, targetId);
 
+  const responseBody: ResponseBody = {
+    data: {
+      checkin_available_epoch: Math.floor(checkinAvailableDateTime.toSeconds()),
+      checkin_boot_epoch: Math.floor(invokeLambdaDateTime.toSeconds())
+    }
+  };
+
   const result: AWSLambda.APIGatewayProxyResult = {
     statusCode: HttpStatus.NO_CONTENT,
     headers: ResponseUtils.getStandardResponseHeaders(),
-    body: undefined
+    body: JSON.stringify(responseBody)
   };
 
   return result;
@@ -196,4 +201,11 @@ function isRequestBody(value: any): value is RequestBody {
     value.data.first_name &&
     value.data.last_name
   );
+}
+
+interface ResponseBody {
+  data: {
+    checkin_available_epoch: number;
+    checkin_boot_epoch: number;
+  };
 }

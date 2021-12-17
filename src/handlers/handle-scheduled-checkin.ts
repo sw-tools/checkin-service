@@ -32,7 +32,7 @@ async function handleInternal(event: EventDetail.Detail) {
 
   console.debug('advancedHeaders', advancedHeaders);
 
-  const checkinDateTime = Luxon.DateTime.fromSeconds(event.checkin_time_epoch);
+  const checkinDateTime = Luxon.DateTime.fromSeconds(event.checkin_available_epoch);
 
   const timeUntilCheckinDuration = checkinDateTime.diffNow();
 
