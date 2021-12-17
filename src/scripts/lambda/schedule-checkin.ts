@@ -8,7 +8,7 @@ import * as process from 'process';
  * @example ```sh
  * npm run compile
  * REGION=us-west-2 API_PREFIX=a12345bcd6 AUTHORIZER_TOKEN=your_chosen_token
- * ./dist/scripts/lambda/schedule-checkin.ts
+ * node ./dist/scripts/lambda/schedule-checkin.ts CONFIRMATION_NUMBER FIRST_NAME LAST_NAME
  * ```
  */
 async function main() {
