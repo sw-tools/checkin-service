@@ -115,7 +115,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
   };
 
   const result: AWSLambda.APIGatewayProxyResult = {
-    statusCode: HttpStatus.NO_CONTENT,
+    statusCode: HttpStatus.OK,
     headers: ResponseUtils.getStandardResponseHeaders(),
     body: JSON.stringify(responseBody)
   };

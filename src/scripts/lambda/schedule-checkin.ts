@@ -26,18 +26,18 @@ async function main() {
           }
         }
       }
-    );
+    ).json<ResponseBody>();
 
     const checkinAvailable = Luxon.DateTime.fromSeconds(
-      result.body.data.checkin_available_epoch
+      result.data.checkin_available_epoch
     ).toLocaleString(Luxon.DateTime.DATETIME_FULL_WITH_SECONDS);
 
-    const checkinBoot = Luxon.DateTime.fromSeconds(
-      result.body.data.checkin_boot_epoch
-    ).toLocaleString(Luxon.DateTime.DATETIME_FULL_WITH_SECONDS);
+    const checkinBoot = Luxon.DateTime.fromSeconds(result.data.checkin_boot_epoch).toLocaleString(
+      Luxon.DateTime.DATETIME_FULL_WITH_SECONDS
+    );
 
     console.log(
-      'Will boot at %s to get ready to attempt checkin. Your checkin is available at',
+      'Will boot %s to get ready to attempt checkin. Your checkin becomes available %s.',
       checkinBoot,
       checkinAvailable
     );
