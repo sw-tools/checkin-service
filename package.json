@@ -9,8 +9,7 @@
     "watch": "rm -rf dist && tsc -w true",
     "lint": "eslint --ext ts src/*",
     "fix": "prettier --config .prettierrc.yml 'src/**/*.ts' --write",
-    "deploy": "npm run lint && SLS_DEBUG=* serverless deploy --verbose",
-    "serverless-package": "SLS_DEBUG=* serverless package",
+    "deploy": "npm run lint && serverless deploy",
     "info": "serverless info"
   },
   "config": {
