@@ -124,7 +124,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 }
 
 async function findFirstLegDate(reservation: Reservation.Reservation) {
-  const body = await SwClient.lookUpExistingReservation(reservation);
+  const body = await SwClient.getReservation(reservation);
 
   const validLegs = [];
 

@@ -1,7 +1,7 @@
 import chromium from 'chrome-aws-lambda';
 import console from 'console';
+import * as util from 'util';
 import * as Reservation from './reservation';
-import * as Wait from './wait';
 
 /**
  * Based on https://github.com/byalextran/southwest-headers/blob/edd3d16d6b74640081cc8aab8f793b9873c28d1a/southwest-headers.py
@@ -64,9 +64,11 @@ export async function generateHeaders(reservation: Reservation.Reservation) {
 
   await page.click("button[type='submit']");
 
+  const waitMs = util.promisify(setTimeout);
+
   // give time for network requests that will fetch the headers
   // TODO: we would prefer to use page.waitForNetworkIdle() here but can't get it working in Lambda
-  await Wait.waitMs(10 * 1000);
+  await waitMs(10 * 1000);
 
   await browser.close();
 

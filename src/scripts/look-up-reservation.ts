@@ -10,7 +10,7 @@ async function main() {
     lastName: process.argv[4]
   };
 
-  const details = await SwClient.lookUpExistingReservation(reservation, console);
+  const details = await SwClient.getReservation(reservation);
 
   console.log(details);
 }

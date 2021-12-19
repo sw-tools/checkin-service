@@ -28,7 +28,7 @@ export async function handle(event: EventDetail.Detail) {
 async function handleInternal(event: EventDetail.Detail) {
   console.log('Reservation', JSON.stringify(event.reservation, null, 2));
 
-  const basicHeaders = await SwClient.findBasicHeaders();
+  const basicHeaders = await SwClient.getBasicHeaders();
   const advancedHeaders = await SwGenerateHeaders.generateHeaders(event.reservation);
 
   console.debug('basicHeaders', basicHeaders);
