@@ -33,7 +33,7 @@ See [src/scripts/lambda/schedule-checkin.ts](src/scripts/lambda/schedule-checkin
 ## TODO
 
 - Save authorization token to a file and re-use it in serverless.yml so that user does not have to input it for every command
-- Delete EventBridge event after checkin
+- After checkin remove the associated eventBridge rule, eventBridge trigger, and lambda permission
 - Try a publicly maintained Lambda layer for Puppeteer/Chromium (e.g. https://github.com/shelfio/chrome-aws-lambda-layer)
 - Try Vite as a replacement for Webpack
 - Use Serverless V3
