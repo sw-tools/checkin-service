@@ -1,8 +1,10 @@
 import console from 'console';
+import * as Got from 'got';
 import * as Luxon from 'luxon';
 import * as util from 'util';
 import * as CheckIn from '../lib/check-in';
 import * as EventDetail from '../lib/event-detail';
+import * as SwClient from '../lib/sw-client';
 import * as SwGenerateHeaders from '../lib/sw-generate-headers';
 
 /**
@@ -23,13 +25,13 @@ export async function handle(event: EventDetail.Detail) {
   return output;
 }
 
-const waitMs = util.promisify(setTimeout);
-
 async function handleInternal(event: EventDetail.Detail) {
-  console.log('event.reservation', JSON.stringify(event.reservation, null, 2));
+  console.log('Reservation', JSON.stringify(event.reservation, null, 2));
 
+  const basicHeaders = await SwClient.findBasicHeaders();
   const advancedHeaders = await SwGenerateHeaders.generateHeaders(event.reservation);
 
+  console.debug('basicHeaders', basicHeaders);
   console.debug('advancedHeaders', advancedHeaders);
 
   const checkinDateTime = Luxon.DateTime.fromSeconds(event.checkin_available_epoch);
@@ -39,8 +41,6 @@ async function handleInternal(event: EventDetail.Detail) {
 
   const millisUntilTryingCheckin = startTryingCheckinDateTime.diffNow().toMillis();
 
-  console.debug('millisUntilTryingCheckin', millisUntilTryingCheckin);
-
   // this is the normal flow; we expect to have some extra time to wait
   if (millisUntilTryingCheckin > 0) {
     console.debug(
@@ -48,29 +48,39 @@ async function handleInternal(event: EventDetail.Detail) {
       Math.floor(millisUntilTryingCheckin / 1000)
     );
 
-    // waitMs will always "win" because logTimeForever will never resolve
-    await Promise.race([
-      waitMs(millisUntilTryingCheckin),
-      logSecondsUntilAttemptingCheckinForever(startTryingCheckinDateTime.toJSDate())
-    ]);
+    const waitMs = util.promisify(setTimeout);
+
+    await waitMs(millisUntilTryingCheckin);
   }
 
-  console.debug('starting checkin attempts at', Math.floor(Luxon.DateTime.now().toSeconds()));
+  console.log(
+    'Starting fetch checkin data attempts at',
+    Luxon.DateTime.now().toLocaleString(Luxon.DateTime.DATETIME_FULL_WITH_SECONDS)
+  );
 
-  await CheckIn.checkIn(event.reservation, 0.25, 80, advancedHeaders, console);
-
-  console.log('checkin succeeded');
-}
-
-async function logSecondsUntilAttemptingCheckinForever(date: Date) {
-  while (true) {
-    console.log('current time:', Luxon.DateTime.now().setZone('America/Denver').toISO());
-
-    console.log(
-      'attempting checkin in %d seconds',
-      Math.floor(Luxon.DateTime.fromJSDate(date).diffNow().toMillis() / 1000)
-    );
-
-    await waitMs(1000);
+  let data;
+  try {
+    data = await CheckIn.makeFetchCheckinDataAttempts(event.reservation, basicHeaders, console);
+  } catch (error) {
+    if (error instanceof Got.HTTPError) {
+      const dataFailure = <Got.Response<CheckIn.CheckinFailedResponse>>error.response;
+      throw new Error(`Failed to fetch checkin data ${JSON.stringify(dataFailure)}`);
+    } else {
+      throw error;
+    }
   }
+
+  console.log(
+    'Checking in at',
+    Luxon.DateTime.now().toLocaleString(Luxon.DateTime.DATETIME_FULL_WITH_SECONDS)
+  );
+
+  const result = await SwClient.loadJsonPage<CheckIn.CheckinSuccessfulResponse>({
+    url: `${SwClient.getBaseUrl()}/mobile-air-operations${data['_links'].checkIn.href}`,
+    json: data['_links'].checkIn.body,
+    method: SwClient.Method.POST,
+    headers: advancedHeaders
+  });
+
+  console.log('Checkin succeeded', JSON.stringify(result, null, 2));
 }

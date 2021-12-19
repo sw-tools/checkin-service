@@ -79,7 +79,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     hours: 24
   });
 
-  console.debug('firstLegDate', firstLegDepartureDate);
+  console.debug('firstLegDepartureDate', firstLegDepartureDate);
 
   // start checking in 5 minutes early (gives time for EventBridge trigger, Lambda cold start,
   // generating advanced checkin headers, etc.)
@@ -124,7 +124,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 }
 
 async function findFirstLegDate(reservation: Reservation.Reservation) {
-  const body = await SwClient.lookUpExistingReservation(reservation, console);
+  const body = await SwClient.lookUpExistingReservation(reservation);
 
   const validLegs = [];
 

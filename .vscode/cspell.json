@@ -12,12 +12,20 @@
     "khtml",
     "luxon",
     "millis",
+    "odout",
     "openflights",
     "parens",
     "prettierrc",
     "slsw",
     "vite"
   ],
-  "ignoreWords": ["iatafilter", "mweb", "requestfinished"],
+  "ignoreWords": [
+    "CHECKEDIN",
+    "LAXLGA",
+    "YOURE",
+    "iatafilter",
+    "mweb",
+    "requestfinished"
+  ],
   "import": []
 }

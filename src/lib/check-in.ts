@@ -1,52 +1,136 @@
 import console from 'console';
-import * as Reservation from '../lib/reservation';
+import HttpStatus from 'http-status';
+import * as Luxon from 'luxon';
+import { Reservation } from '../lib/reservation';
 import * as SwClient from '../lib/sw-client';
 
-export async function checkIn(
-  reservation: Reservation.Reservation,
-  delayBetweenRequestsSeconds: number,
-  maxAttempts: number,
-  advancedHeaders: Record<string, string>,
+export function makeFetchCheckinDataAttempts(
+  reservation: Reservation,
+  headers: Record<string, string>,
   logger?: typeof console
 ) {
-  if (logger) {
-    logger.log('Fetching checkin data');
-  }
+  type Response = {
+    _links: {
+      checkIn: {
+        body: Record<string, any>;
+        href: string;
+      };
+    };
+  };
 
-  const headers = await SwClient.findBasicHeaders();
-
-  const data = await SwClient.fetchCheckinData(
-    reservation,
-    delayBetweenRequestsSeconds,
-    maxAttempts,
+  return SwClient.loadJsonPage<Response>({
+    url: SwClient.withSuffix(
+      'mobile-air-operations/v1/mobile-air-operations/page/check-in/',
+      reservation
+    ),
+    method: SwClient.Method.GET,
     headers,
-    logger
-  );
-
-  if (!data) {
-    throw new Error('Checkin failed');
-  }
-
-  const infoNeeded = data['_links']['checkIn'];
-
-  console.log('infoNeeded', JSON.stringify(infoNeeded, null, 2));
-
-  const url = `${SwClient.getBaseUrl()}/mobile-air-operations${infoNeeded['href']}`;
-
-  if (logger) {
-    logger.log('Attempting check-in...');
-  }
-
-  const response = await SwClient.loadJsonPage({
-    url,
-    body: infoNeeded['body'],
-    delayBetweenRequestsSeconds,
-    logger,
-    maxAttempts,
-    method: SwClient.Method.POST,
-    headers: advancedHeaders
+    retry: {
+      // this should give us 5 seconds of checkin tries before checkin time and 15 seconds after
+      limit: 80,
+      methods: [SwClient.Method.POST],
+      statusCodes: [HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND],
+      calculateDelay: state => {
+        const nowTimestamp = Luxon.DateTime.now().toLocaleString(
+          Luxon.DateTime.DATETIME_FULL_WITH_SECONDS
+        );
+        if (logger) {
+          logger.log(
+            'failed on attempt %d of %d at %s with error',
+            state.attemptCount,
+            state.retryOptions.limit,
+            nowTimestamp,
+            JSON.stringify(state.error, null, 2)
+          );
+        }
+        // stop when limit is hit. see https://github.com/sindresorhus/got/blob/HEAD/documentation/7-retry.md#calculatedelay
+        if (state.computedValue === 0) {
+          return 0;
+        }
+        // retry every quarter of a second
+        return 0.25;
+      }
+    }
   });
+}
 
-  console.log('response to actual check-in');
-  console.log(response);
+export interface CheckinSuccessfulResponse {
+  messages: null;
+  contactInformationMessage: {
+    key: 'VERIFY_CONTACT_METHOD';
+    /** @example null */
+    header: unknown;
+    body: string;
+    icon: 'NONE';
+    textColor: TextColor;
+    linkText: string;
+  };
+  title: {
+    key: 'CHECKIN__YOURE_CHECKEDIN';
+    body: string;
+    icon: 'SUCCESS';
+    textColor: TextColor;
+  };
+  flights: {
+    boundIndex: number;
+    segmentType: FlightSegmentType;
+    /** @example "08:30" */
+    departureTime: string;
+    /** @example "C23" */
+    gate: string;
+    /** @todo */
+    passengers: unknown[];
+    /** @example "LAX" */
+    originAirportCode: string;
+    /** @example "LGA" */
+    destinationAirportCode: string;
+    /** @example "1111" **/
+    flightNumber: string;
+    hasWifi: boolean;
+    /** @example "5h 10m" */
+    travelTime: string;
+  }[];
+  /** @example { 'checkin.odout': "LAXLGA" } */
+  _analytics: Record<string, string>;
+  _links: {
+    checkInSessionToken: string;
+    viewAllBoardingPasses: {
+      href: string;
+      method: SwClient.Method.POST;
+      /** @todo */
+      body: unknown[];
+      labelText: string;
+      /** @example null */
+      nonSequentialPositionsMessage: unknown;
+    };
+    contactInformation: {
+      href: string;
+      method: SwClient.Method.POST;
+      query: unknown[];
+    };
+  };
+}
+
+enum TextColor {
+  DEFAULT = 'DEFAULT',
+  NORMAL = 'NORMAL'
+}
+
+enum FlightSegmentType {
+  DEPARTING = 'DEPARTING',
+  ARRIVING = 'ARRIVING'
+}
+
+export interface CheckinFailedResponse {
+  code: number;
+  /** @example "Sorry! This reservation is not eligible for check in." */
+  message: string;
+  /** @example "ERROR__AIR_TRAVEL__BEFORE_CHECKIN_WINDOW" */
+  messageKey: string;
+  /** @example null */
+  header: unknown;
+  /** @example "BAD_REQUEST" */
+  httpStatusCode: string;
+  requestId: string;
+  infoList: unknown[];
 }
