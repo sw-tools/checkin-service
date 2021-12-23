@@ -19,13 +19,6 @@
     "slsw",
     "vite"
   ],
-  "ignoreWords": [
-    "CHECKEDIN",
-    "LAXLGA",
-    "YOURE",
-    "iatafilter",
-    "mweb",
-    "requestfinished"
-  ],
+  "ignoreWords": ["checkedin", "laxlga", "youre", "iatafilter", "mweb", "requestfinished"],
   "import": []
 }
