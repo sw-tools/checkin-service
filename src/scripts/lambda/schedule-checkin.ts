@@ -3,15 +3,17 @@ import Got from 'got';
 import * as Luxon from 'luxon';
 import * as process from 'process';
 
+/* eslint-disable max-len */
 /**
  * Schedule a checkin based on a reservation.
  *
  * @example ```sh
  * npm run compile
- * REGION=us-west-2 API_PREFIX=a12345bcd6 AUTHORIZER_TOKEN=your_chosen_token
- * node ./dist/scripts/lambda/schedule-checkin.ts CONFIRMATION_NUMBER FIRST_NAME LAST_NAME
+ *
+ * REGION=us-west-2 API_PREFIX=your_given_api_gateway_prefix AUTHORIZER_TOKEN=your_chosen_token node ./dist/scripts/lambda/schedule-checkin.ts CONFIRMATION_NUMBER FIRST_NAME LAST_NAME
  * ```
  */
+/* eslint-enable max-len */
 async function main() {
   try {
     const result = await Got.put<ResponseBody>(
