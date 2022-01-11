@@ -34,7 +34,7 @@ Uses airline's API in an unsupported manner. Use at your own risk.
 
 ## TODO
 
-- Save authorization token to a file and re-use it in serverless.yml so that user does not have to input it for every command
+- Use something like dotenv to read authorization token so that user does not have to add it to their environment manually
 - After checkin remove the associated eventBridge rule, eventBridge trigger, and lambda permission
 - Try a publicly maintained Lambda layer for Puppeteer/Chromium (e.g. https://github.com/shelfio/chrome-aws-lambda-layer)
 - Use Serverless V3
