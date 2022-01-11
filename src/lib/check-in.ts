@@ -26,8 +26,8 @@ export function makeFetchCheckinDataAttempts(
     method: SwClient.Method.GET,
     headers,
     retry: {
-      // we'll try a total of 80 times
-      // this should give us 5 seconds of checkin tries before checkin time and 15 seconds after
+      // We'll try a total of 80 times.
+      // This should give us 5 seconds of checkin tries before checkin time and 15 seconds after.
       limit: 79,
       methods: [SwClient.Method.POST],
       statusCodes: [400, HttpStatus.NOT_FOUND],
@@ -36,12 +36,14 @@ export function makeFetchCheckinDataAttempts(
           Luxon.DateTime.DATETIME_FULL_WITH_SECONDS
         );
         if (logger) {
+          // It's normal to see many of these messages before we get the good response. We try
+          // many times because checkin does not become available at exactly the time expected.
           logger.log(
             'Failed on attempt %d of %d at %s with error:',
             state.attemptCount,
             state.retryOptions.limit,
             nowTimestamp,
-            state.error
+            state.error.response?.body
           );
         }
 
