@@ -35,6 +35,7 @@ export function makeFetchCheckinDataAttempts(
           Luxon.DateTime.DATETIME_FULL_WITH_SECONDS
         );
         if (logger) {
+          // temporary try/catch so that this cannot break the retry
           try {
             logger.log(
               'Failed on attempt %d of %d at %s with error:',
