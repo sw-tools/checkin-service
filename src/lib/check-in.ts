@@ -26,34 +26,32 @@ export function makeFetchCheckinDataAttempts(
     method: SwClient.Method.GET,
     headers,
     retry: {
+      // we'll try a total of 80 times
       // this should give us 5 seconds of checkin tries before checkin time and 15 seconds after
-      limit: 80,
+      limit: 79,
       methods: [SwClient.Method.POST],
-      statusCodes: [HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND],
+      statusCodes: [400, HttpStatus.NOT_FOUND],
       calculateDelay: state => {
         const nowTimestamp = Luxon.DateTime.now().toLocaleString(
           Luxon.DateTime.DATETIME_FULL_WITH_SECONDS
         );
         if (logger) {
-          // temporary try/catch so that this cannot break the retry
-          try {
-            logger.log(
-              'Failed on attempt %d of %d at %s with error:',
-              state.attemptCount,
-              state.retryOptions.limit,
-              nowTimestamp,
-              state.error
-            );
-          } catch (error) {
-            console.warn('Caught error while logging:', error);
-          }
+          logger.log(
+            'Failed on attempt %d of %d at %s with error:',
+            state.attemptCount,
+            state.retryOptions.limit,
+            nowTimestamp,
+            state.error
+          );
         }
-        // stop when limit is hit. see https://github.com/sindresorhus/got/blob/HEAD/documentation/7-retry.md#calculatedelay
-        if (state.computedValue === 0) {
+
+        // cancel retry when limit is hit
+        if (state.attemptCount > state.retryOptions.limit) {
           return 0;
         }
-        // retry every quarter of a second
-        return 0.25;
+
+        // retry every 250 milliseconds
+        return 250;
       }
     }
   });
