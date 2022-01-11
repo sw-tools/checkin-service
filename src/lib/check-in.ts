@@ -35,13 +35,18 @@ export function makeFetchCheckinDataAttempts(
           Luxon.DateTime.DATETIME_FULL_WITH_SECONDS
         );
         if (logger) {
-          logger.log(
-            'failed on attempt %d of %d at %s with error',
-            state.attemptCount,
-            state.retryOptions.limit,
-            nowTimestamp,
-            JSON.stringify(state.error, null, 2)
-          );
+          // temporary try/catch so that this cannot break the retry
+          try {
+            logger.log(
+              'Failed on attempt %d of %d at %s with error:',
+              state.attemptCount,
+              state.retryOptions.limit,
+              nowTimestamp,
+              state.error
+            );
+          } catch (error) {
+            console.warn('Caught error while logging:', error);
+          }
         }
         // stop when limit is hit. see https://github.com/sindresorhus/got/blob/HEAD/documentation/7-retry.md#calculatedelay
         if (state.computedValue === 0) {
