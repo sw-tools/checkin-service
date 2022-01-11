@@ -35,7 +35,7 @@ export async function handle(event: AWSLambda.APIGatewayProxyEvent) {
     const result: AWSLambda.APIGatewayProxyResult = {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       headers: ResponseUtils.getStandardResponseHeaders(),
-      body: JSON.stringify({ error: 'Internal server error' })
+      body: JSON.stringify({ error: 'Internal server error', error_code: 'internal_server_error' })
     };
 
     return result;

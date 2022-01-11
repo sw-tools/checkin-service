@@ -64,7 +64,7 @@ async function handleInternal(event: EventDetail.Detail) {
   } catch (error) {
     if (error instanceof Got.HTTPError) {
       const dataFailure = <Got.Response<CheckIn.CheckinFailedResponse>>error.response;
-      throw new Error(`Failed to fetch checkin data ${JSON.stringify(dataFailure)}`);
+      throw new Error(`Failed to fetch checkin data: ${dataFailure}`);
     } else {
       throw error;
     }
