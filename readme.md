@@ -10,7 +10,7 @@ Uses airline's API in an unsupported manner. Use at your own risk.
 
 ## Deploying
 
-1. [Set up an AWS profile](https://docs.aws.amazon.com/toolkit-for-visual-studio/latest/user-guide/keys-profiles-credentials.html#adding-a-profile-to-the-aws-credentials-profile-file) called 'sw-tools' on your computer
+1. [Set up an AWS profile on your computer](https://docs.aws.amazon.com/toolkit-for-visual-studio/latest/user-guide/keys-profiles-credentials.html#adding-a-profile-to-the-aws-credentials-profile-file) called 'sw-tools'
 
 1. Add Chromium/Puppeteer Lambda layer:
 
