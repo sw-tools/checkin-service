@@ -63,67 +63,74 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     lastName: requestBody.data.last_name
   };
 
-  const firstLegDepartureDate = await findFirstLegDate(reservation);
+  const allDepartureDates = await findAllDepartureLegs(reservation);
 
-  if (!firstLegDepartureDate) {
+  if (!allDepartureDates) {
     const result: AWSLambda.APIGatewayProxyResult = {
       statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
       headers: ResponseUtils.getStandardResponseHeaders(),
       body: JSON.stringify({ error: 'No future legs found', error_code: 'no_future_legs' })
     };
-
     return result;
   }
 
-  const checkinAvailableDateTime = Luxon.DateTime.fromJSDate(firstLegDepartureDate).minus({
-    hours: 24
-  });
-
-  console.debug('firstLegDepartureDate', firstLegDepartureDate);
-
-  // start checking in 5 minutes early (gives time for EventBridge trigger, Lambda cold start,
-  // generating advanced checkin headers, etc.)
-  const invokeLambdaDateTime = checkinAvailableDateTime.minus({ minutes: 5 });
-
-  // TODO: hash first and last name into a single string
-  const ruleName =
-    `${reservation.confirmationNumber}-${reservation.firstName}-` +
-    `${reservation.lastName}-${invokeLambdaDateTime.toSeconds()}`;
-
-  const cronExpression = CronUtils.generateCronExpressionUtc(invokeLambdaDateTime.toJSDate());
-
-  console.debug('cronExpression', cronExpression);
-
-  await putRule(ruleName, cronExpression);
-
-  const detail: EventDetail.Detail = {
-    reservation,
-    checkin_available_epoch: checkinAvailableDateTime.toSeconds()
-  };
-
-  const targetId = Uuid.v4();
-
-  await putTarget(ruleName, targetId, detail);
-
-  await addLambdaPermission(ruleName, targetId);
+  console.debug('allDepartureDates:', allDepartureDates);
 
   const responseBody: ResponseBody = {
     data: {
-      checkin_available_epoch: Math.floor(checkinAvailableDateTime.toSeconds()),
-      checkin_boot_epoch: Math.floor(invokeLambdaDateTime.toSeconds())
+      checkin_times: []
     }
   };
+
+  const checkinAvailableDateTimes = allDepartureDates.map(date =>
+    Luxon.DateTime.fromJSDate(date).minus({
+      hours: 24
+    })
+  );
+  for (const checkinAvailableDateTime of checkinAvailableDateTimes) {
+    // start checking in 5 minutes early (gives time for EventBridge trigger, Lambda cold start,
+    // generating advanced checkin headers, etc.)
+    const invokeLambdaDateTime = checkinAvailableDateTime.minus({ minutes: 5 });
+
+    // TODO: hash first and last name into a single string
+    const ruleName =
+      `${reservation.confirmationNumber}-${reservation.firstName}-` +
+      `${reservation.lastName}-${invokeLambdaDateTime.toSeconds()}`;
+
+    const cronExpression = CronUtils.generateCronExpressionUtc(invokeLambdaDateTime.toJSDate());
+
+    console.debug('cronExpression', cronExpression);
+
+    await putRule(ruleName, cronExpression);
+
+    const detail: EventDetail.Detail = {
+      reservation,
+      checkin_available_epoch: checkinAvailableDateTime.toSeconds()
+    };
+
+    const targetId = Uuid.v4();
+
+    await putTarget(ruleName, targetId, detail);
+
+    await addLambdaPermission(ruleName, targetId);
+
+    const checkinTime: CheckinTime = {
+      checkin_available_epoch: Math.floor(checkinAvailableDateTime.toSeconds()),
+      checkin_boot_epoch: Math.floor(invokeLambdaDateTime.toSeconds())
+    };
+
+    responseBody.data.checkin_times.push(checkinTime);
+  }
 
   const result: AWSLambda.APIGatewayProxyResult = {
     statusCode: HttpStatus.OK,
     headers: ResponseUtils.getStandardResponseHeaders(),
     body: JSON.stringify(responseBody)
   };
-
   return result;
 }
 
-async function findFirstLegDate(reservation: Reservation.Reservation) {
+async function findAllDepartureLegs(reservation: Reservation.Reservation) {
   const body = await SwClient.getReservation(reservation);
 
   const validLegs = [];
@@ -146,7 +153,7 @@ async function findFirstLegDate(reservation: Reservation.Reservation) {
     return;
   }
 
-  return Luxon.DateTime.min(...validLegs).toJSDate();
+  return validLegs.map(legs => legs.toJSDate());
 }
 
 function putRule(ruleName: string, cronExpression: string) {
@@ -203,9 +210,13 @@ function isRequestBody(value: any): value is RequestBody {
   );
 }
 
+interface CheckinTime {
+  checkin_available_epoch: number;
+  checkin_boot_epoch: number;
+}
+
 interface ResponseBody {
   data: {
-    checkin_available_epoch: number;
-    checkin_boot_epoch: number;
+    checkin_times: CheckinTime[];
   };
 }
