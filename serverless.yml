@@ -82,12 +82,12 @@ functions:
     layers:
       - { Ref: ChromeAwsLambdaLambdaLayer }
 
-Resources:
-  resources:
+resources:
+  Resources:
     HandleScheduledCheckinPolicy:
       Type: AWS::Lambda::Permission
       Properties:
         Action: lambda:InvokeFunction
-        FunctionName: !GetAtt HandleScheduledCheckin.Arn
+        FunctionName: !GetAtt HandleScheduledCheckinLambdaFunction.Arn
         Principal: events.amazonaws.com
         SourceArn: arn:aws:events:${self:provider.region}:${aws:accountId}:rule/${self:custom.rule_prefixes.trigger_scheduled_checkin}*
