@@ -1,5 +1,4 @@
 import * as EventBridge from '@aws-sdk/client-eventbridge';
-import * as Lambda from '@aws-sdk/client-lambda';
 import AWSLambda from 'aws-lambda';
 import console from 'console';
 import HttpStatus from 'http-status';
@@ -94,6 +93,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 
     // TODO: hash first and last name into a single string
     const ruleName =
+      process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX +
       `${reservation.confirmationNumber}-${reservation.firstName}-` +
       `${reservation.lastName}-${invokeLambdaDateTime.toSeconds()}`;
 
@@ -111,8 +111,6 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     const targetId = Uuid.v4();
 
     await putTarget(ruleName, targetId, detail);
-
-    await addLambdaPermission(ruleName, targetId);
 
     const checkinTime: CheckinTime = {
       checkin_available_epoch: Math.floor(checkinAvailableDateTime.toSeconds()),
@@ -184,20 +182,6 @@ function putTarget(ruleName: string, targetId: string, detail: Record<string, an
   });
 
   return client.send(putTargetsCommand);
-}
-
-function addLambdaPermission(ruleName: string, targetId: string) {
-  const lambda = new Lambda.Lambda({});
-
-  const addPermissionCommand = new Lambda.AddPermissionCommand({
-    FunctionName: 'checkin-service-prod-HandleScheduledCheckin',
-    StatementId: targetId,
-    Action: 'lambda:InvokeFunction',
-    Principal: 'events.amazonaws.com',
-    SourceArn: `arn:aws:events:${process.env.AWS_REGION}:${process.env.ACCOUNT_ID}:rule/${ruleName}`
-  });
-
-  return lambda.send(addPermissionCommand);
 }
 
 function isRequestBody(value: any): value is RequestBody {

@@ -9,6 +9,7 @@ provider:
   environment:
     AUTHORIZER_TOKEN: ${env:AUTHORIZER_TOKEN}
     ACCOUNT_ID: ${aws:accountId}
+    TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX: ${self:custom.rule_prefixes.trigger_scheduled_checkin}
   versionFunctions: false
   apiName: ${self:provider.stage}
   runtime: nodejs14.x
@@ -22,12 +23,7 @@ provider:
         - Effect: Allow
           Action:
             - events:*
-          Resource: arn:aws:events:${self:provider.region}:${aws:accountId}:rule/*
-        # ScheduleCheckin adds permission for created eventBridge rules to invoke HandleScheduledCheckin
-        - Effect: Allow
-          Action:
-            - lambda:AddPermission
-          Resource: arn:aws:lambda:${self:provider.region}:${aws:accountId}:function:checkin-service-prod-HandleScheduledCheckin
+          Resource: arn:aws:events:${self:provider.region}:${aws:accountId}:rule/${self:custom.rule_prefixes.trigger_scheduled_checkin}*
 
 layers:
   chromeAwsLambda:
@@ -48,6 +44,8 @@ custom:
       forceExclude:
         - chrome-aws-lambda
         - puppeteer-core
+  rule_prefixes:
+    trigger_scheduled_checkin: trigger-scheduled-checkin-
 
 functions:
   Authorizer:
@@ -83,3 +81,13 @@ functions:
     maximumRetryAttempts: 0
     layers:
       - { Ref: ChromeAwsLambdaLambdaLayer }
+
+Resources:
+  resources:
+    HandleScheduledCheckinPolicy:
+      Type: AWS::Lambda::Permission
+      Properties:
+        Action: lambda:InvokeFunction
+        FunctionName: !GetAtt HandleScheduledCheckin.Arn
+        Principal: events.amazonaws.com
+        SourceArn: arn:aws:events:${self:provider.region}:${aws:accountId}:rule/${self:custom.rule_prefixes.trigger_scheduled_checkin}*

@@ -37,6 +37,6 @@ Uses airline's API in an unsupported manner. Use at your own risk.
 ## TODO
 
 - Use something like dotenv to read authorization token so that user does not have to add it to their environment manually
-- After checkin remove the associated eventBridge rule, eventBridge trigger, and lambda permission
+- After checkin remove the associated eventBridge rule and eventBridge trigger
 - Try a publicly maintained Lambda layer for Puppeteer/Chromium (e.g. https://github.com/shelfio/chrome-aws-lambda-layer)
 - Use Serverless V3
