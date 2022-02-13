@@ -1,0 +1,17 @@
+.eslintrc.js
+.git
+.gitignore
+prettierrc.yml
+.serverless
+.vscode
+.webpack
+LICENSE
+dist
+layers
+node_modules
+package-lock.json
+package.json
+readme.md
+serverless.yml
+tsconfig.json
+webpack.config.js
