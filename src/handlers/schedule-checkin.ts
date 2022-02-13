@@ -104,22 +104,22 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 
     const eventBridge = new EventBridge.EventBridgeClient({});
 
-    await putRule(eventBridge, ruleName, cronExpression);
+    await putRule({ eventBridge, ruleName, cronExpression });
 
-    const detail: Queue.Message = {
+    const message: Queue.Message = {
       reservation,
       checkin_available_epoch: checkinAvailableDateTime.toSeconds()
     };
 
     const targetId = Uuid.v4();
 
-    await putTarget(
+    await putTarget({
       eventBridge,
       ruleName,
       targetId,
-      detail,
-      process.env.SCHEDULED_CHECKIN_READY_QUEUE_URL
-    );
+      message: message,
+      targetArn: process.env.SCHEDULED_CHECKIN_READY_QUEUE_URL
+    });
 
     const checkinTime: CheckinTime = {
       checkin_available_epoch: Math.floor(checkinAvailableDateTime.toSeconds()),

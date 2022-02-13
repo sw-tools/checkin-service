@@ -1,36 +1,40 @@
 import * as EventBridge from '@aws-sdk/client-eventbridge';
 import * as Queue from '../lib/scheduled-checkin-ready-queue';
 
-export function putRule(
-  eventBridge: EventBridge.EventBridgeClient,
-  ruleName: string,
-  cronExpression: string
-) {
-  const putRuleCommand = new EventBridge.PutRuleCommand({
-    Name: ruleName,
-    ScheduleExpression: `cron(${cronExpression})`
-  });
-
-  return eventBridge.send(putRuleCommand);
+export interface PutRuleInput {
+  eventBridge: EventBridge.EventBridgeClient;
+  ruleName: string;
+  cronExpression: string;
 }
 
-export function putTarget(
-  eventBridge: EventBridge.EventBridgeClient,
-  ruleName: string,
-  targetId: string,
-  detail: Queue.Message,
-  targetArn: string
-) {
+export function putRule(input: PutRuleInput) {
+  const putRuleCommand = new EventBridge.PutRuleCommand({
+    Name: input.ruleName,
+    ScheduleExpression: `cron(${input.cronExpression})`
+  });
+
+  return input.eventBridge.send(putRuleCommand);
+}
+
+export interface PutTargetInput {
+  eventBridge: EventBridge.EventBridgeClient;
+  ruleName: string;
+  targetId: string;
+  message: Queue.Message;
+  targetArn: string;
+}
+
+export function putTarget(input: PutTargetInput) {
   const putTargetsCommand = new EventBridge.PutTargetsCommand({
-    Rule: ruleName,
+    Rule: input.ruleName,
     Targets: [
       {
-        Id: targetId,
-        Arn: targetArn,
-        Input: JSON.stringify(detail)
+        Id: input.targetId,
+        Arn: input.targetArn,
+        Input: JSON.stringify(input.message)
       }
     ]
   });
 
-  return eventBridge.send(putTargetsCommand);
+  return input.eventBridge.send(putTargetsCommand);
 }
