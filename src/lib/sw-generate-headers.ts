@@ -43,8 +43,6 @@ export async function generateHeaders(reservation: Reservation.Reservation) {
           headers[header] = allHeaders[header];
         }
       }
-
-      request.abort().catch(console.error);
     }
   });
 
