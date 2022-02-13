@@ -62,11 +62,9 @@ export async function generateHeaders(reservation: Reservation.Reservation) {
 
   await page.click("button[type='submit']");
 
-  const waitMs = util.promisify(setTimeout);
-
-  // give time for network requests that will fetch the headers
-  // TODO: we would prefer to use page.waitForNetworkIdle() here but can't get it working in Lambda
-  await waitMs(10 * 1000);
+  await page.waitForNavigation({
+    waitUntil: ['networkidle0', 'load']
+  });
 
   await browser.close();
 
