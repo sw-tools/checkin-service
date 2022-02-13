@@ -111,13 +111,11 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
       checkin_available_epoch: checkinAvailableDateTime.toSeconds()
     };
 
-    const targetId = Uuid.v4();
-
     await putTarget({
       eventBridge,
       ruleName,
-      targetId,
-      message: message,
+      targetId: Uuid.v4(),
+      message,
       targetArn: process.env.SCHEDULED_CHECKIN_READY_QUEUE_URL
     });
 
