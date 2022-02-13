@@ -10,6 +10,7 @@ provider:
     AUTHORIZER_TOKEN: ${env:AUTHORIZER_TOKEN}
     ACCOUNT_ID: ${aws:accountId}
     TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX: ${self:custom.rule_prefixes.trigger_scheduled_checkin}
+    SCHEDULED_CHECKIN_READY_QUEUE_URL: !Ref SqsScheduledCheckinReadyQueue
   versionFunctions: false
   apiName: ${self:provider.stage}
   runtime: nodejs14.x
@@ -24,6 +25,10 @@ provider:
           Action:
             - events:*
           Resource: arn:aws:events:${self:provider.region}:${aws:accountId}:rule/${self:custom.rule_prefixes.trigger_scheduled_checkin}*
+        - Effect: Allow
+          Action:
+            - sqs:*
+          Resource: !GetAtt SqsScheduledCheckinReadyQueue.Arn
 
 layers:
   chromeAwsLambda:
@@ -57,7 +62,6 @@ functions:
     handler: src/handlers/schedule-checkin.handle
     description: Schedule a future checkin
     timeout: 30
-    maximumRetryAttempts: 0
     events:
       - http:
           method: put
@@ -77,10 +81,14 @@ functions:
     handler: src/handlers/handle-scheduled-checkin.handle
     description: Handle a scheduled checkin
     timeout: 600
+    # puppeteer uses a lot of memory
     memorySize: 1600
-    maximumRetryAttempts: 0
     layers:
       - { Ref: ChromeAwsLambdaLambdaLayer }
+    events:
+      - sqs:
+          arn: !GetAtt SqsScheduledCheckinReadyQueue.Arn
+          batchSize: 1
 
 resources:
   Resources:
@@ -91,3 +99,40 @@ resources:
         FunctionName: !GetAtt HandleScheduledCheckinLambdaFunction.Arn
         Principal: events.amazonaws.com
         SourceArn: arn:aws:events:${self:provider.region}:${aws:accountId}:rule/${self:custom.rule_prefixes.trigger_scheduled_checkin}*
+
+    SqsScheduledCheckinReadyQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:provider.stage}-${self:service}-scheduled-checkin-ready
+        MessageRetentionPeriod: 1209600
+        # 6x function timeout
+        VisibilityTimeout: 9600
+        RedrivePolicy:
+          deadLetterTargetArn: !GetAtt SqsScheduledCheckinReadyDlq.Arn
+          # no retries for now
+          maxReceiveCount: 1
+
+    SqsScheduledCheckinReadyDlq:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:provider.stage}-${self:service}-scheduled-checkin-ready-dlq
+        MessageRetentionPeriod: 1209600
+
+    # Allow EventBridge trigger_scheduled_checkin rules to send SQS messages to SqsScheduledCheckinReadyQueue
+    EventBridgeToToSqsPolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        PolicyDocument:
+          Statement:
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+              Resource: !GetAtt SqsScheduledCheckinReadyQueue.Arn
+              Principal:
+                Service:
+                  - events.amazonaws.com
+              Condition:
+                ArnEquals:
+                  aws:SourceArn: arn:aws:events:${self:provider.region}:${aws:accountId}:rule/${self:custom.rule_prefixes.trigger_scheduled_checkin}*
+        Queues:
+          - Ref: SqsScheduledCheckinReadyQueue

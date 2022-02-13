@@ -16,9 +16,18 @@
     "openflights",
     "parens",
     "prettierrc",
+    "redrive",
     "slsw",
     "vite"
   ],
-  "ignoreWords": ["checkedin", "laxlga", "youre", "iatafilter", "mweb", "requestfinished"],
+  "ignoreWords": [
+    "checkedin",
+    "eqeqeq",
+    "iatafilter",
+    "laxlga",
+    "mweb",
+    "requestfinished",
+    "youre"
+  ],
   "import": []
 }

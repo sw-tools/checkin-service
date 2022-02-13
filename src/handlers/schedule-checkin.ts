@@ -5,10 +5,11 @@ import HttpStatus from 'http-status';
 import * as Luxon from 'luxon';
 import * as process from 'process';
 import * as Uuid from 'uuid';
+import { putRule, putTarget } from '../lib/create-eventbridge-rule';
 import * as CronUtils from '../lib/cron-utils';
-import * as EventDetail from '../lib/event-detail';
 import * as Reservation from '../lib/reservation';
 import * as ResponseUtils from '../lib/response-utils';
+import * as Queue from '../lib/scheduled-checkin-ready-queue';
 import * as SwClient from '../lib/sw-client';
 import * as Timezone from '../lib/timezones';
 
@@ -89,32 +90,40 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
   for (const checkinAvailableDateTime of checkinAvailableDateTimes) {
     // start checking in 5 minutes early (gives time for EventBridge trigger, Lambda cold start,
     // generating advanced checkin headers, etc.)
-    const invokeLambdaDateTime = checkinAvailableDateTime.minus({ minutes: 5 });
+    const ruleFireDateTime = checkinAvailableDateTime.minus({ minutes: 5 });
 
     // TODO: hash first and last name into a single string
     const ruleName =
       process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX +
       `${reservation.confirmationNumber}-${reservation.firstName}-` +
-      `${reservation.lastName}-${invokeLambdaDateTime.toSeconds()}`;
+      `${reservation.lastName}-${ruleFireDateTime.toSeconds()}`;
 
-    const cronExpression = CronUtils.generateCronExpressionUtc(invokeLambdaDateTime.toJSDate());
+    const cronExpression = CronUtils.generateCronExpressionUtc(ruleFireDateTime.toJSDate());
 
     console.debug('cronExpression', cronExpression);
 
-    await putRule(ruleName, cronExpression);
+    const eventBridge = new EventBridge.EventBridgeClient({});
 
-    const detail: EventDetail.Detail = {
+    await putRule(eventBridge, ruleName, cronExpression);
+
+    const detail: Queue.Message = {
       reservation,
       checkin_available_epoch: checkinAvailableDateTime.toSeconds()
     };
 
     const targetId = Uuid.v4();
 
-    await putTarget(ruleName, targetId, detail);
+    await putTarget(
+      eventBridge,
+      ruleName,
+      targetId,
+      detail,
+      process.env.SCHEDULED_CHECKIN_READY_QUEUE_URL
+    );
 
     const checkinTime: CheckinTime = {
       checkin_available_epoch: Math.floor(checkinAvailableDateTime.toSeconds()),
-      checkin_boot_epoch: Math.floor(invokeLambdaDateTime.toSeconds())
+      checkin_boot_epoch: Math.floor(ruleFireDateTime.toSeconds())
     };
 
     responseBody.data.checkin_times.push(checkinTime);
@@ -152,36 +161,6 @@ async function findAllDepartureLegs(reservation: Reservation.Reservation) {
   }
 
   return validLegs.map(legs => legs.toJSDate());
-}
-
-function putRule(ruleName: string, cronExpression: string) {
-  const client = new EventBridge.EventBridgeClient({});
-
-  const putRuleCommand = new EventBridge.PutRuleCommand({
-    Name: ruleName,
-    ScheduleExpression: `cron(${cronExpression})`
-  });
-
-  return client.send(putRuleCommand);
-}
-
-function putTarget(ruleName: string, targetId: string, detail: Record<string, any>) {
-  const client = new EventBridge.EventBridgeClient({});
-
-  const putTargetsCommand = new EventBridge.PutTargetsCommand({
-    Rule: ruleName,
-    Targets: [
-      {
-        Id: targetId,
-        Arn:
-          `arn:aws:lambda:${process.env.AWS_REGION}:${process.env.ACCOUNT_ID}:` +
-          `function:checkin-service-prod-HandleScheduledCheckin`,
-        Input: JSON.stringify(detail)
-      }
-    ]
-  });
-
-  return client.send(putTargetsCommand);
 }
 
 function isRequestBody(value: any): value is RequestBody {
