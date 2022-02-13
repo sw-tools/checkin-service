@@ -1,9 +1,7 @@
-import { Reservation } from './reservation';
+import { isReservation, Reservation } from './reservation';
 
 export interface Message {
-  /**
-   * 24 hours before scheduled departure in epoch seconds.
-   */
+  /** 24 hours before scheduled departure in unix epoch seconds */
   checkin_available_epoch: number;
 
   reservation: Reservation;
@@ -14,9 +12,7 @@ export function isMessage(value: any): value is Message {
 
   return (
     typedValue &&
-    typedValue.reservation &&
-    typeof typedValue.reservation.confirmation_number === 'string' &&
-    typeof typedValue.reservation.first_name === 'string' &&
-    typeof typedValue.reservation.last_name === 'string'
+    typeof typedValue.checkin_available_epoch === 'number' &&
+    isReservation(typedValue.reservation)
   );
 }
