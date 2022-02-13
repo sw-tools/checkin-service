@@ -56,9 +56,9 @@ export async function generateHeaders(reservation: Reservation.Reservation) {
 
   await page.waitForSelector("input[name='recordLocator']");
 
-  await page.type("input[name='recordLocator']", reservation.confirmationNumber);
-  await page.type("input[name='firstName']", reservation.firstName);
-  await page.type("input[name='lastName']", reservation.lastName);
+  await page.type("input[name='recordLocator']", reservation.confirmation_number);
+  await page.type("input[name='firstName']", reservation.first_name);
+  await page.type("input[name='lastName']", reservation.last_name);
 
   await page.click("button[type='submit']");
 

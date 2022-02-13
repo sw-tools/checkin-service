@@ -15,8 +15,8 @@ export function isMessage(value: any): value is Message {
   return (
     typedValue &&
     typedValue.reservation &&
-    typeof typedValue.reservation.confirmationNumber === 'string' &&
-    typeof typedValue.reservation.firstName === 'string' &&
-    typeof typedValue.reservation.lastName === 'string'
+    typeof typedValue.reservation.confirmation_number === 'string' &&
+    typeof typedValue.reservation.first_name === 'string' &&
+    typeof typedValue.reservation.last_name === 'string'
   );
 }

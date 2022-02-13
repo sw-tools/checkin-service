@@ -13,15 +13,15 @@ async function main() {
   const cronExpression = generateCronExpressionUtc(ruleFireDateTime.toJSDate());
 
   const reservation: Reservation = {
-    confirmationNumber: '12345',
-    firstName: 'John',
-    lastName: 'Doe'
+    confirmation_number: '12345',
+    first_name: 'John',
+    last_name: 'Doe'
   };
 
   const ruleName =
     'trigger-scheduled-checkin-' +
-    `${reservation.confirmationNumber}-${reservation.firstName}-` +
-    `${reservation.lastName}-${ruleFireDateTime.toSeconds()}`;
+    `${reservation.confirmation_number}-${reservation.first_name}-` +
+    `${reservation.last_name}-${ruleFireDateTime.toSeconds()}`;
 
   const eventBridge = new EventBridge.EventBridgeClient({
     region: 'us-west-2',

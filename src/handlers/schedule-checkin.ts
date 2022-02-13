@@ -58,9 +58,9 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
   }
 
   const reservation: Reservation.Reservation = {
-    confirmationNumber: requestBody.data.confirmation_number,
-    firstName: requestBody.data.first_name,
-    lastName: requestBody.data.last_name
+    confirmation_number: requestBody.data.confirmation_number,
+    first_name: requestBody.data.first_name,
+    last_name: requestBody.data.last_name
   };
 
   const allDepartureDates = await findAllDepartureLegs(reservation);
@@ -95,8 +95,8 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     // TODO: hash first and last name into a single string
     const ruleName =
       process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX +
-      `${reservation.confirmationNumber}-${reservation.firstName}-` +
-      `${reservation.lastName}-${ruleFireDateTime.toSeconds()}`;
+      `${reservation.confirmation_number}-${reservation.first_name}-` +
+      `${reservation.last_name}-${ruleFireDateTime.toSeconds()}`;
 
     const cronExpression = CronUtils.generateCronExpressionUtc(ruleFireDateTime.toJSDate());
 

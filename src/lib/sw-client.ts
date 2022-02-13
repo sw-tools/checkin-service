@@ -82,8 +82,8 @@ export async function getBasicHeaders() {
 
 export function withSuffix(uri: string, reservation: Reservation) {
   return (
-    `${getBaseUrl()}/${uri}${reservation.confirmationNumber}` +
-    `?first-name=${reservation.firstName}&last-name=${reservation.lastName}`
+    `${getBaseUrl()}/${uri}${reservation.confirmation_number}` +
+    `?first-name=${reservation.first_name}&last-name=${reservation.last_name}`
   );
 }
 

@@ -1,5 +1,5 @@
 export interface Reservation {
-  confirmationNumber: string;
-  firstName: string;
-  lastName: string;
+  confirmation_number: string;
+  first_name: string;
+  last_name: string;
 }
