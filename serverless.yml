@@ -119,7 +119,7 @@ resources:
         MessageRetentionPeriod: 1209600
 
     # Allow EventBridge trigger_scheduled_checkin rules to send SQS messages to SqsScheduledCheckinReadyQueue
-    EventBridgeToToSqsPolicy:
+    SqsTriggerScheduledCheckinRuleToScheduledCheckinReadyQueuePolicy:
       Type: AWS::SQS::QueuePolicy
       Properties:
         PolicyDocument:
