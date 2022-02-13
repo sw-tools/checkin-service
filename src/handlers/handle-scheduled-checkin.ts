@@ -10,7 +10,7 @@ import * as SwGenerateHeaders from '../lib/sw-generate-headers';
 /**
  * On scheduled checkin, check the user in.
  *
- * @todo also remove the associated eventBridge rule, eventBridge trigger, and lambda permission
+ * @todo also remove the associated eventBridge rule and eventBridge trigger
  */
 export async function handle(event: EventDetail.Detail) {
   let output: unknown;
