@@ -46,8 +46,14 @@ export async function generateHeaders(reservation: Reservation.Reservation) {
     }
   });
 
+  // Only continue the request that have the header information we need
+  // Small optimization to save us from continuing on 100~ or so request
   page.on('request', request => {
-    request.continue().catch(console.error);
+    if (request.url().startsWith('https://mobile.southwest.com/')) {
+      request.continue().catch(console.error);
+    } else {
+      request.abort().catch(console.error);
+    }
   });
 
   await page.setRequestInterception(true);
