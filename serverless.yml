@@ -92,14 +92,6 @@ functions:
 
 resources:
   Resources:
-    HandleScheduledCheckinPolicy:
-      Type: AWS::Lambda::Permission
-      Properties:
-        Action: lambda:InvokeFunction
-        FunctionName: !GetAtt HandleScheduledCheckinLambdaFunction.Arn
-        Principal: events.amazonaws.com
-        SourceArn: arn:aws:events:${self:provider.region}:${aws:accountId}:rule/${self:custom.rule_prefixes.trigger_scheduled_checkin}*
-
     SqsScheduledCheckinReadyQueue:
       Type: AWS::SQS::Queue
       Properties:
