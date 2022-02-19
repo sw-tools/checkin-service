@@ -46,8 +46,14 @@ export async function generateHeaders(reservation: Reservation.Reservation) {
     }
   });
 
+  // Only continue the request that have the header information we need
+  // Small optimization to save us from continuing on 100~ or so request
   page.on('request', request => {
-    request.continue().catch(console.error);
+    if (request.url().startsWith('https://mobile.southwest.com/')) {
+      request.continue().catch(console.error);
+    } else {
+      request.abort().catch(console.error);
+    }
   });
 
   await page.setRequestInterception(true);
@@ -62,11 +68,9 @@ export async function generateHeaders(reservation: Reservation.Reservation) {
 
   await page.click("button[type='submit']");
 
-  const waitMs = util.promisify(setTimeout);
-
-  // give time for network requests that will fetch the headers
-  // TODO: we would prefer to use page.waitForNetworkIdle() here but can't get it working in Lambda
-  await waitMs(10 * 1000);
+  await page.waitForNavigation({
+    waitUntil: ['networkidle0', 'load']
+  });
 
   await browser.close();
 
