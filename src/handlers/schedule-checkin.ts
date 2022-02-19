@@ -111,6 +111,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
       checkin_available_epoch: checkinAvailableDateTime.toSeconds()
     };
 
+    // have the eventbridge rule send an sqs message to the scheduled-checkin-ready queue
     await putTarget({
       eventBridge,
       ruleName,
