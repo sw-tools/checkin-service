@@ -11,7 +11,7 @@ import * as Queue from '../../lib/scheduled-checkin-ready-queue';
 
 async function main() {
   assert(process.argv.length === 3, 'Invalid parameters');
-  const accountId = process.argv[2];
+  const awsAccountId = process.argv[2];
 
   const ruleFireDateTime = Luxon.DateTime.now().plus({ minutes: 1 });
 
@@ -45,7 +45,7 @@ async function main() {
     ruleName,
     targetId: `test-${ruleFireDateTime.toSeconds()}`,
     message,
-    targetArn: `arn:aws:sqs:us-west-2:${accountId}:prod-checkin-service-scheduled-checkin-ready`
+    targetArn: `arn:aws:sqs:us-west-2:${awsAccountId}:prod-checkin-service-scheduled-checkin-ready`
   });
 }
 
