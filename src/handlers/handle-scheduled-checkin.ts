@@ -34,7 +34,7 @@ export async function handle(event: AWSLambda.SQSEvent) {
 async function handleInternal(event: AWSLambda.SQSEvent) {
   const body = JSON.parse(event.Records[0].body);
 
-  console.log('Reservation', JSON.stringify(body.reservation, null, 2));
+  console.log('Received SQS message', util.inspect(body, { depth: null }));
 
   // TODO: is the message nested within the EventBridge message that triggered this message?
   assert(Queue.isMessage(body), 'Invalid message');
