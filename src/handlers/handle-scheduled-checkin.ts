@@ -71,7 +71,13 @@ async function handleInternal(event: AWSLambda.SQSEvent) {
 
   let data;
   try {
-    data = await CheckIn.makeFetchCheckinDataAttempts(body.reservation, basicHeaders, console);
+    data = await CheckIn.makeFetchCheckinDataAttempts({
+      reservation: body.reservation,
+      headers: basicHeaders,
+      attemptLimit: 80,
+      millisPerRequest: 250,
+      logger: console
+    });
   } catch (error) {
     if (error instanceof Got.HTTPError) {
       const dataFailure = <Got.Response<CheckIn.CheckinFailedResponse>>error.response;
