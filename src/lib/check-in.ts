@@ -59,7 +59,7 @@ interface MakeDelayedRequestInput {
 }
 
 async function makeDelayedRequest(input: MakeDelayedRequestInput) {
-  // NOTE: we don't concern ourselves with cancelling in-flight http requests, just in-flight
+  // NOTE: we don't concern ourselves with cancelling in-flight http requests, only in-flight
   // setTimeouts
 
   await new Promise<void>((resolve, reject) => {
