@@ -5,9 +5,9 @@ import * as SwClient from '../lib/sw-client';
 
 async function main() {
   const reservation: Reservation.Reservation = {
-    confirmationNumber: process.argv[2],
-    firstName: process.argv[3],
-    lastName: process.argv[4]
+    confirmation_number: process.argv[2],
+    first_name: process.argv[3],
+    last_name: process.argv[4]
   };
 
   const details = await SwClient.getReservation(reservation);
