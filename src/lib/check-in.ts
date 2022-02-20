@@ -67,12 +67,12 @@ async function makeDelayedRequest(input: MakeDelayedRequestInput) {
   // setTimeouts
 
   await new Promise<void>((resolve, reject) => {
-    const timeOut = setTimeout(() => {
+    const timeout = setTimeout(() => {
       resolve();
     }, input.waitMillis);
 
     input.cancelSignal.catch(err => {
-      clearTimeout(timeOut);
+      clearTimeout(timeout);
       reject(err);
     });
   });
