@@ -1,4 +1,5 @@
 import console from 'console';
+import * as Luxon from 'luxon';
 import { Reservation } from '../lib/reservation';
 import * as SwClient from '../lib/sw-client';
 
@@ -58,6 +59,9 @@ interface MakeDelayedRequestInput {
   logger?: typeof console;
 }
 
+/**
+ * Wait `input.waitMillis` and then make a request to fetch checkin data.
+ */
 async function makeDelayedRequest(input: MakeDelayedRequestInput) {
   // NOTE: we don't concern ourselves with cancelling in-flight http requests, only in-flight
   // setTimeouts
@@ -94,13 +98,17 @@ async function makeDelayedRequest(input: MakeDelayedRequestInput) {
     });
   } catch (error) {
     if (input.logger) {
+      const nowTimestamp = Luxon.DateTime.now().toLocaleString(
+        Luxon.DateTime.DATETIME_FULL_WITH_SECONDS
+      );
       // It's normal to see many of these messages before we get the good response. We try
       // many times because the airline's API has a quirk of not making checking available at
       // exactly the time expected.
       input.logger.log(
-        'Failed on attempt %d of %d at %s with error:',
+        'Failed to fetch checkin data on attempt %d of %d at %s with error:',
         input.attempt,
         input.attemptLimit,
+        nowTimestamp,
         error
       );
     }
