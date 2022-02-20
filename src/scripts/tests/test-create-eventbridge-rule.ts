@@ -43,10 +43,11 @@ async function main() {
   await putTarget({
     eventBridge,
     ruleName,
-    targetId: `test-${ruleFireDateTime.toSeconds()}`,
     message,
     targetArn: `arn:aws:sqs:us-west-2:${awsAccountId}:prod-checkin-service-scheduled-checkin-ready`
   });
+
+  console.log('done');
 }
 
 main().catch(console.error);

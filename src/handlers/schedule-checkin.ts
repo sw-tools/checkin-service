@@ -4,7 +4,6 @@ import console from 'console';
 import HttpStatus from 'http-status';
 import * as Luxon from 'luxon';
 import * as process from 'process';
-import * as Uuid from 'uuid';
 import { putRule, putTarget } from '../lib/create-eventbridge-rule';
 import * as CronUtils from '../lib/cron-utils';
 import * as Reservation from '../lib/reservation';
@@ -88,8 +87,8 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     })
   );
   for (const checkinAvailableDateTime of checkinAvailableDateTimes) {
-    // start checking in 5 minutes early (gives time for EventBridge trigger, Lambda cold start,
-    // generating advanced checkin headers, etc.)
+    // Boot Lambda 5 minutes before checkin is ready. Gives time for SQS message to invoke Lambda,
+    // Lambda cold start, generating advanced headers, etc.)
     const ruleFireDateTime = checkinAvailableDateTime.minus({ minutes: 5 });
 
     // TODO: hash first and last name into a single string
@@ -106,16 +105,16 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 
     await putRule({ eventBridge, ruleName, cronExpression });
 
+    // have the eventbridge rule send an sqs message to the scheduled-checkin-ready queue
+
     const message: Queue.Message = {
       reservation,
       checkin_available_epoch: checkinAvailableDateTime.toSeconds()
     };
 
-    // have the eventbridge rule send an sqs message to the scheduled-checkin-ready queue
     await putTarget({
       eventBridge,
       ruleName,
-      targetId: Uuid.v4(),
       message,
       targetArn: process.env.SCHEDULED_CHECKIN_READY_QUEUE_URL
     });

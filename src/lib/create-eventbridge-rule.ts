@@ -1,4 +1,5 @@
 import * as EventBridge from '@aws-sdk/client-eventbridge';
+import * as Uuid from 'uuid';
 import * as Queue from '../lib/scheduled-checkin-ready-queue';
 
 export interface PutRuleInput {
@@ -19,7 +20,6 @@ export function putRule(input: PutRuleInput) {
 export interface PutTargetInput {
   eventBridge: EventBridge.EventBridgeClient;
   ruleName: string;
-  targetId: string;
   message: Queue.Message;
   targetArn: string;
 }
@@ -29,7 +29,7 @@ export function putTarget(input: PutTargetInput) {
     Rule: input.ruleName,
     Targets: [
       {
-        Id: input.targetId,
+        Id: Uuid.v4(),
         Arn: input.targetArn,
         Input: JSON.stringify(input.message)
       }

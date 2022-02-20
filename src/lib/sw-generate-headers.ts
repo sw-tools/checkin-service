@@ -1,5 +1,6 @@
 import chromium from 'chrome-aws-lambda';
 import console from 'console';
+import * as util from 'util';
 import * as Reservation from './reservation';
 
 /**
