@@ -24,6 +24,8 @@ export async function makeFetchCheckinDataAttempts(input: MakeFetchCheckinDataAt
 
   const signal = createCancellableSignal();
 
+  // schedule requests such that they are made on each `input.millisPerRequest` interval
+
   const promises = [];
   for (let attempt = 0; attempt < input.attemptLimit; attempt++) {
     const waitMillis = attempt * input.millisPerRequest;
@@ -41,6 +43,7 @@ export async function makeFetchCheckinDataAttempts(input: MakeFetchCheckinDataAt
     promises.push(requestPromise);
   }
 
+  // wait for the first successful response
   const response = await Promise.any(promises);
 
   // we got the checkin data; cancel the remaining attempts
