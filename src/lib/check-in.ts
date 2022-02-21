@@ -105,7 +105,7 @@ async function makeDelayedRequest(input: MakeDelayedRequestInput) {
         Luxon.DateTime.DATETIME_FULL_WITH_SECONDS
       );
       // It's normal to see many of these messages before we get the good response. We try
-      // many times because the airline's API has a quirk of not making checking available at
+      // many times because the airline's API has a quirk of not making checkin available at
       // exactly the time expected.
       input.logger.log(
         'Failed to fetch checkin data on attempt %d of %d at %s with error:',
