@@ -115,6 +115,8 @@ async function makeDelayedRequest(input: MakeDelayedRequestInput) {
         error
       );
     }
+
+    throw error;
   }
 
   return response;
