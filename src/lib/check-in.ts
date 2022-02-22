@@ -46,6 +46,7 @@ export async function makeFetchCheckinDataAttempts(input: MakeFetchCheckinDataAt
   }
 
   // wait for the first successful response
+  // promiseAny is a polyfill for Promise.any
   const response = await promiseAny(promises);
 
   // we got the checkin data; cancel the remaining attempts
