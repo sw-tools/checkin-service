@@ -11,6 +11,7 @@ provider:
     ACCOUNT_ID: ${aws:accountId}
     TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX: ${self:custom.rule_prefixes.trigger_scheduled_checkin}
     SCHEDULED_CHECKIN_READY_QUEUE_URL: !Ref SqsScheduledCheckinReadyQueue
+    SCHEDULED_CHECKIN_READY_QUEUE_ARN: !GetAtt SqsScheduledCheckinReadyQueue.Arn
   versionFunctions: false
   apiName: ${self:provider.stage}
   runtime: nodejs14.x

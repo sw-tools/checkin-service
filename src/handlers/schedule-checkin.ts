@@ -116,7 +116,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
       eventBridge,
       ruleName,
       message,
-      targetArn: process.env.SCHEDULED_CHECKIN_READY_QUEUE_URL
+      targetArn: process.env.SCHEDULED_CHECKIN_READY_QUEUE_ARN
     });
 
     const checkinTime: CheckinTime = {
