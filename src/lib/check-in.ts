@@ -1,6 +1,6 @@
 import console from 'console';
 import * as Luxon from 'luxon';
-import PromiseAny from 'promise.any';
+import promiseAny from 'promise.any';
 import * as util from 'util';
 import { Reservation } from '../lib/reservation';
 import * as SwClient from '../lib/sw-client';
@@ -46,7 +46,7 @@ export async function makeFetchCheckinDataAttempts(input: MakeFetchCheckinDataAt
   }
 
   // wait for the first successful response
-  const response = await PromiseAny(promises);
+  const response = await promiseAny(promises);
 
   // we got the checkin data; cancel the remaining attempts
   signal.cancel();
