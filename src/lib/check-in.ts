@@ -1,14 +1,88 @@
 import console from 'console';
-import HttpStatus from 'http-status';
 import * as Luxon from 'luxon';
+import promiseAny from 'promise.any';
+import * as util from 'util';
 import { Reservation } from '../lib/reservation';
 import * as SwClient from '../lib/sw-client';
 
-export function makeFetchCheckinDataAttempts(
-  reservation: Reservation,
-  headers: Record<string, string>,
-  logger?: typeof console
-) {
+export interface MakeFetchCheckinDataAttemptsInput {
+  reservation: Reservation;
+  headers: Record<string, string>;
+  attemptLimit: number;
+  millisPerRequest: number;
+  logger?: typeof console;
+}
+
+/**
+ * Make many requests in attempt to fetch checkin data as quickly as possible.
+ *
+ * Does not wait for each request to complete. Instead simply makes requests on an interval until
+ * one is successful. Thus, we will likely have multiple requests in flight at once.
+ */
+export async function makeFetchCheckinDataAttempts(input: MakeFetchCheckinDataAttemptsInput) {
+  // Create a cancel function that can be used to cancel the attempts. We are essentially
+  // implementing a cancelable promise. We use this to cancel the remaining attempts once we get one
+  // successful response.
+
+  const signal = createCancellableSignal();
+
+  // schedule requests such that they are made on each `input.millisPerRequest` interval
+
+  const promises = [];
+  for (let attempt = 0; attempt < input.attemptLimit; attempt++) {
+    const waitMillis = attempt * input.millisPerRequest;
+
+    const requestPromise = makeDelayedRequest({
+      reservation: input.reservation,
+      headers: input.headers,
+      waitMillis,
+      cancelSignal: signal.signal,
+      attempt,
+      attemptLimit: input.attemptLimit,
+      logger: input.logger
+    });
+
+    promises.push(requestPromise);
+  }
+
+  // wait for the first successful response
+  // promiseAny is a polyfill for Promise.any
+  const response = await promiseAny(promises);
+
+  // we got the checkin data; cancel the remaining attempts
+  signal.cancel();
+
+  return response;
+}
+
+interface MakeDelayedRequestInput {
+  reservation: Reservation;
+  headers: Record<string, string>;
+  waitMillis: number;
+  cancelSignal: Promise<void>;
+  attempt?: number;
+  attemptLimit?: number;
+  logger?: typeof console;
+}
+
+/**
+ * Wait `input.waitMillis` and then make a request to fetch checkin data.
+ */
+async function makeDelayedRequest(input: MakeDelayedRequestInput) {
+  // NOTE: we don't concern ourselves with cancelling in-flight http requests, only in-flight
+  // setTimeouts
+
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      resolve();
+    }, input.waitMillis);
+
+    input.cancelSignal.catch(err => {
+      clearTimeout(timeout);
+      reject(err);
+    });
+  });
+
   type Response = {
     _links: {
       checkIn: {
@@ -18,45 +92,37 @@ export function makeFetchCheckinDataAttempts(
     };
   };
 
-  return SwClient.loadJsonPage<Response>({
-    url: SwClient.withSuffix(
-      'mobile-air-operations/v1/mobile-air-operations/page/check-in/',
-      reservation
-    ),
-    method: SwClient.Method.GET,
-    headers,
-    retry: {
-      // We'll try a total of 80 times.
-      // This should give us 5 seconds of checkin tries before checkin time and 15 seconds after.
-      limit: 79,
-      methods: [SwClient.Method.POST],
-      statusCodes: [400, HttpStatus.NOT_FOUND],
-      calculateDelay: state => {
-        const nowTimestamp = Luxon.DateTime.now().toLocaleString(
-          Luxon.DateTime.DATETIME_FULL_WITH_SECONDS
-        );
-        if (logger) {
-          // It's normal to see many of these messages before we get the good response. We try
-          // many times because checkin does not become available at exactly the time expected.
-          logger.log(
-            'Failed on attempt %d of %d at %s with error:',
-            state.attemptCount,
-            state.retryOptions.limit,
-            nowTimestamp,
-            state.error.response?.body
-          );
-        }
-
-        // cancel retry when limit is hit
-        if (state.attemptCount > state.retryOptions.limit) {
-          return 0;
-        }
-
-        // retry every 250 milliseconds
-        return 250;
-      }
+  let response;
+  try {
+    response = await SwClient.loadJsonPage<Response>({
+      url: SwClient.withSuffix(
+        'mobile-air-operations/v1/mobile-air-operations/page/check-in/',
+        input.reservation
+      ),
+      method: SwClient.Method.GET,
+      headers: input.headers
+    });
+  } catch (error) {
+    if (input.logger) {
+      const nowTimestamp = Luxon.DateTime.now().toLocaleString(
+        Luxon.DateTime.DATETIME_FULL_WITH_SECONDS
+      );
+      // It's normal to see many of these messages before we get the good response. We try
+      // many times because the airline's API has a quirk of not making checkin available at
+      // exactly the time expected.
+      input.logger.log(
+        'Failed to fetch checkin data on attempt %d of %d at %s with error:',
+        input.attempt,
+        input.attemptLimit,
+        nowTimestamp,
+        util.inspect(error, { depth: null })
+      );
     }
-  });
+
+    throw error;
+  }
+
+  return response;
 }
 
 export interface CheckinSuccessfulResponse {
@@ -138,4 +204,24 @@ export interface CheckinFailedResponse {
   httpStatusCode: string;
   requestId: string;
   infoList: unknown[];
+}
+
+/**
+ * https://medium.com/@masnun/creating-cancellable-promises-33bf4b9da39c
+ */
+function createCancellableSignal() {
+  type CancellableSignal = {
+    signal: Promise<void>;
+    cancel: () => void;
+  };
+
+  const result = <CancellableSignal>{};
+
+  result.signal = new Promise((resolve, reject) => {
+    result.cancel = () => {
+      reject(new Error('Promise was cancelled'));
+    };
+  });
+
+  return result;
 }

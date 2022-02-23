@@ -15,7 +15,15 @@ async function main() {
 
   const basicHeaders = await SwClient.getBasicHeaders();
 
-  await CheckIn.makeFetchCheckinDataAttempts(reservation, basicHeaders, console);
+  await CheckIn.makeFetchCheckinDataAttempts({
+    reservation,
+    headers: basicHeaders,
+    attemptLimit: 80,
+    millisPerRequest: 250,
+    logger: console
+  });
+
+  console.log('done');
 }
 
 main().catch(console.error);
