@@ -115,7 +115,7 @@ async function makeDelayedRequest(input: MakeDelayedRequestInput) {
         input.attempt,
         input.attemptLimit,
         nowTimestamp,
-        util.inspect(error)
+        util.inspect(error, { depth: null })
       );
     }
 
