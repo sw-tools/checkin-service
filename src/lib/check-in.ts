@@ -1,7 +1,6 @@
 import console from 'console';
 import * as Luxon from 'luxon';
 import promiseAny from 'promise.any';
-import * as util from 'util';
 import { Reservation } from '../lib/reservation';
 import * as SwClient from '../lib/sw-client';
 
@@ -115,7 +114,7 @@ async function makeDelayedRequest(input: MakeDelayedRequestInput) {
         input.attempt,
         input.attemptLimit,
         nowTimestamp,
-        util.inspect(error, { depth: null })
+        error.response.body
       );
     }
 
