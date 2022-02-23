@@ -114,7 +114,7 @@ async function makeDelayedRequest(input: MakeDelayedRequestInput) {
         input.attempt,
         input.attemptLimit,
         nowTimestamp,
-        error.response.body
+        error.response?.body
       );
     }
 
