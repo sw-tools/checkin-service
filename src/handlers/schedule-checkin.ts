@@ -112,6 +112,10 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
       checkin_available_epoch: checkinAvailableDateTime.toSeconds()
     };
 
+    // Don't schedule a checkin if it's already scheduled.
+    // A rule's name is essentially a serialized reservation, so we can simply check if there is
+    // already a rule with this name to determine if the checkin is already scheduled.
+
     const ruleExists = await doesRuleExist({
       eventBridge,
       ruleName
