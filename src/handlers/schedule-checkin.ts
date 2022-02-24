@@ -97,20 +97,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
       `${reservation.confirmation_number}-${reservation.first_name}-` +
       `${reservation.last_name}-${ruleFireDateTime.toSeconds()}`;
 
-    const cronExpression = CronUtils.generateCronExpressionUtc(ruleFireDateTime.toJSDate());
-
-    console.debug('cronExpression', cronExpression);
-
     const eventBridge = new EventBridge.EventBridgeClient({});
-
-    await putRule({ eventBridge, ruleName, cronExpression });
-
-    // have the eventbridge rule send an sqs message to the scheduled-checkin-ready queue
-
-    const message: Queue.Message = {
-      reservation,
-      checkin_available_epoch: checkinAvailableDateTime.toSeconds()
-    };
 
     // Don't schedule a checkin if it's already scheduled.
     // A rule's name is essentially a serialized reservation, so we can simply check if there is
@@ -132,6 +119,19 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
       };
       return result;
     }
+
+    const cronExpression = CronUtils.generateCronExpressionUtc(ruleFireDateTime.toJSDate());
+
+    console.debug('cronExpression', cronExpression);
+
+    await putRule({ eventBridge, ruleName, cronExpression });
+
+    // have the eventbridge rule send an sqs message to the scheduled-checkin-ready queue
+
+    const message: Queue.Message = {
+      reservation,
+      checkin_available_epoch: checkinAvailableDateTime.toSeconds()
+    };
 
     await putTarget({
       eventBridge,
