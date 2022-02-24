@@ -4,7 +4,7 @@ import console from 'console';
 import HttpStatus from 'http-status';
 import * as Luxon from 'luxon';
 import * as process from 'process';
-import { putRule, putTarget } from '../lib/create-eventbridge-rule';
+import { doesRuleExist, putRule, putTarget } from '../lib/create-eventbridge-rule';
 import * as CronUtils from '../lib/cron-utils';
 import * as Reservation from '../lib/reservation';
 import * as ResponseUtils from '../lib/response-utils';
@@ -111,6 +111,23 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
       reservation,
       checkin_available_epoch: checkinAvailableDateTime.toSeconds()
     };
+
+    const ruleExists = await doesRuleExist({
+      eventBridge,
+      ruleName
+    });
+
+    if (ruleExists) {
+      const result: AWSLambda.APIGatewayProxyResult = {
+        statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+        headers: ResponseUtils.getStandardResponseHeaders(),
+        body: JSON.stringify({
+          error: 'Checkin already scheduled',
+          error_code: 'checkin_already_scheduled'
+        })
+      };
+      return result;
+    }
 
     await putTarget({
       eventBridge,
