@@ -21,6 +21,9 @@
     "vite"
   ],
   "ignoreWords": [
+    "confnum",
+    "firstname",
+    "lastname",
     "checkedin",
     "eqeqeq",
     "iatafilter",
