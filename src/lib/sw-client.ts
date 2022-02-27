@@ -3,7 +3,9 @@ import * as Uuid from 'uuid';
 import { Reservation } from '../lib/reservation';
 
 /**
- * @todo investigate why this function sometimes throws a 403 error
+ * @todo investigate why this function sometimes throws a 403 error. It happens many times in a row
+ * for a period of time, and then resolves itself. It seems to start after several requests are sent
+ * quickly. Maybe the API is throttling us? Not sure why that would be indicated by a 403 error.
  */
 export async function getReservation(reservation: Reservation) {
   type ExistingReservation = {
