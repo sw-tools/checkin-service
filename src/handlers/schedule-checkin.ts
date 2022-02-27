@@ -4,6 +4,7 @@ import console from 'console';
 import HttpStatus from 'http-status';
 import * as Luxon from 'luxon';
 import * as process from 'process';
+import * as util from 'util';
 import { doesRuleExist, putRule, putTarget } from '../lib/create-eventbridge-rule';
 import * as CronUtils from '../lib/cron-utils';
 import { Reservation } from '../lib/reservation';
@@ -57,7 +58,19 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 
   const allDepartureDates = await findAllDepartureLegs(reservation);
 
-  if (!allDepartureDates) {
+  if (allDepartureDates.error) {
+    const result: AWSLambda.APIGatewayProxyResult = {
+      statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+      headers: ResponseUtils.getStandardResponseHeaders(),
+      body: JSON.stringify({
+        error: allDepartureDates.error,
+        error_code: 'unable_to_find_departure_legs'
+      })
+    };
+    return result;
+  }
+
+  if (allDepartureDates.legs.length < 1) {
     const result: AWSLambda.APIGatewayProxyResult = {
       statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
       headers: ResponseUtils.getStandardResponseHeaders(),
@@ -66,12 +79,12 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     return result;
   }
 
-  console.debug('allDepartureDates:', allDepartureDates);
+  console.debug('allDepartureDates', util.inspect(allDepartureDates, { depth: null }));
 
   const addedCheckinTimes = [];
   const alreadyScheduledCheckinTimes = [];
 
-  const checkinAvailableDateTimes = allDepartureDates.map(date =>
+  const checkinAvailableDateTimes = allDepartureDates.legs.map(date =>
     Luxon.DateTime.fromJSDate(date).minus({ hours: 24 })
   );
 
@@ -144,7 +157,16 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 }
 
 async function findAllDepartureLegs(reservation: Reservation) {
-  const body = await SwClient.getReservation(reservation);
+  let body;
+  try {
+    body = await SwClient.getReservation(reservation);
+  } catch (error) {
+    console.error(error);
+
+    return {
+      error: 'Failed to look up reservation'
+    };
+  }
 
   const validLegs = [];
 
@@ -162,11 +184,9 @@ async function findAllDepartureLegs(reservation: Reservation) {
     validLegs.push(takeoffDateTime);
   }
 
-  if (validLegs.length < 1) {
-    return;
-  }
-
-  return validLegs.map(legs => legs.toJSDate());
+  return {
+    legs: validLegs.map(legs => legs.toJSDate())
+  };
 }
 
 function isRequestBody(value: any): value is RequestBody {
