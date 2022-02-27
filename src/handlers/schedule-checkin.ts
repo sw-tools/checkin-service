@@ -164,7 +164,7 @@ async function findAllDepartureLegs(reservation: Reservation) {
     console.error(error);
 
     return {
-      error: 'Failed to look up reservation'
+      error: 'Failed to look up reservation. Try again later.'
     };
   }
 

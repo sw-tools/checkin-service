@@ -2,6 +2,9 @@ import * as Got from 'got';
 import * as Uuid from 'uuid';
 import { Reservation } from '../lib/reservation';
 
+/**
+ * @todo investigate why this function sometimes throws a 403 error
+ */
 export async function getReservation(reservation: Reservation) {
   type ExistingReservation = {
     bounds: {
