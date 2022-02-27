@@ -21,9 +21,9 @@ interface RequestBody {
 }
 
 /**
- * Given a reservation, determine when the checkin can be performed for each leg of the trip and
- * creates an EventBridge rule to send a message to the scheduled-checkin-ready queue 5 minutes
- * before it's time to check in to each leg of the trip.
+ * Given a reservation, determine when checkin can first be performed for each leg of the trip and
+ * create an EventBridge rule for each. Configure the rule to send a message to the
+ * scheduled-checkin-ready queue 5 minutes before it's time to check in.
  */
 export async function handle(event: AWSLambda.APIGatewayProxyEvent) {
   let result: AWSLambda.APIGatewayProxyResult;
