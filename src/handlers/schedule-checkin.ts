@@ -21,7 +21,9 @@ interface RequestBody {
 }
 
 /**
- * On scheduled check in, check a user in
+ * Given a reservation, determine when the checkin can be performed for each leg of the trip and
+ * creates an EventBridge rule to send a message to the scheduled-checkin-ready queue 5 minutes
+ * before it's time to check in to each leg of the trip.
  */
 export async function handle(event: AWSLambda.APIGatewayProxyEvent) {
   let result: AWSLambda.APIGatewayProxyResult;
@@ -82,16 +84,15 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
   };
 
   const checkinAvailableDateTimes = allDepartureDates.map(date =>
-    Luxon.DateTime.fromJSDate(date).minus({
-      hours: 24
-    })
+    Luxon.DateTime.fromJSDate(date).minus({ hours: 24 })
   );
+
   for (const checkinAvailableDateTime of checkinAvailableDateTimes) {
     // Boot Lambda 5 minutes before checkin is ready. Gives time for SQS message to invoke Lambda,
     // Lambda cold start, generating advanced headers, etc.)
     const ruleFireDateTime = checkinAvailableDateTime.minus({ minutes: 5 });
 
-    // TODO: hash first and last name into a single string
+    // TODO: hash first name, last name, and confirmation number into a single string
     const ruleName =
       process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX +
       `${reservation.confirmation_number}-${reservation.first_name}-` +
@@ -103,10 +104,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     // A rule's name is essentially a serialized reservation, so we can simply check if there is
     // already a rule with this name to determine if the checkin is already scheduled.
 
-    const ruleExists = await doesRuleExist({
-      eventBridge,
-      ruleName
-    });
+    const ruleExists = await doesRuleExist(eventBridge, ruleName);
 
     if (ruleExists) {
       const result: AWSLambda.APIGatewayProxyResult = {
@@ -119,6 +117,8 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
       };
       return result;
     }
+
+    // create the rule
 
     const cronExpression = CronUtils.generateCronExpressionUtc(ruleFireDateTime.toJSDate());
 
