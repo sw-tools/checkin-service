@@ -50,6 +50,7 @@ export async function doesRuleExist(eventBridge: EventBridge.EventBridgeClient, 
     if (error.name === 'ResourceNotFoundException') {
       return false;
     }
+    throw error;
   }
 
   return true;
