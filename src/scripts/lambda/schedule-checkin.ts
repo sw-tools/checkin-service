@@ -1,6 +1,5 @@
 import console from 'console';
 import Got from 'got';
-import * as Luxon from 'luxon';
 import * as process from 'process';
 
 /* eslint-disable max-len */
@@ -16,7 +15,7 @@ import * as process from 'process';
 /* eslint-enable max-len */
 async function main() {
   try {
-    const result = await Got.put<ResponseBody>(
+    const result = await Got.put(
       `https://${process.env.API_PREFIX}.execute-api.${process.env.REGION}.amazonaws.com/prod/v1/checkin-service/checkin`,
       {
         headers: { token: process.env.AUTHORIZER_TOKEN },
@@ -28,31 +27,12 @@ async function main() {
           }
         }
       }
-    ).json<ResponseBody>();
+    ).json();
 
-    const checkinAvailable = Luxon.DateTime.fromSeconds(
-      result.data.checkin_available_epoch
-    ).toLocaleString(Luxon.DateTime.DATETIME_FULL_WITH_SECONDS);
-
-    const checkinBoot = Luxon.DateTime.fromSeconds(result.data.checkin_boot_epoch).toLocaleString(
-      Luxon.DateTime.DATETIME_FULL_WITH_SECONDS
-    );
-
-    console.log(
-      'Will boot %s to get ready to attempt checkin. Your checkin becomes available %s.',
-      checkinBoot,
-      checkinAvailable
-    );
+    console.log('result', JSON.stringify(result, null, 2));
   } catch (error) {
     console.error(error.response?.body);
   }
-}
-
-interface ResponseBody {
-  data: {
-    checkin_available_epoch: number;
-    checkin_boot_epoch: number;
-  };
 }
 
 main().catch(console.error);
