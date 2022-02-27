@@ -54,7 +54,6 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
       headers: ResponseUtils.getStandardResponseHeaders(),
       body: JSON.stringify({ error: 'Invalid parameters', error_code: 'invalid_parameters' })
     };
-
     return result;
   }
 
