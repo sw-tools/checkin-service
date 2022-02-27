@@ -48,7 +48,9 @@ custom:
     webpackConfig: webpack.config.js
     includeModules:
       forceExclude:
+        # included in chrome_aws_lambda layer
         - chrome-aws-lambda
+        # included in chrome_aws_lambda layer
         - puppeteer-core
   rule_prefixes:
     trigger_scheduled_checkin: trigger-scheduled-checkin-
