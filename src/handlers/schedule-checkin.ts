@@ -68,11 +68,8 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 
   console.debug('allDepartureDates:', allDepartureDates);
 
-  const responseBody: ResponseBody = {
-    data: {
-      checkin_times: []
-    }
-  };
+  const addedCheckinTimes = [];
+  const alreadyScheduledCheckinTimes = [];
 
   const checkinAvailableDateTimes = allDepartureDates.map(date =>
     Luxon.DateTime.fromJSDate(date).minus({ hours: 24 })
@@ -89,6 +86,11 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
       `${reservation.confirmation_number}-${reservation.first_name}-` +
       `${reservation.last_name}-${ruleFireDateTime.toSeconds()}`;
 
+    const checkinTime: CheckinTime = {
+      checkin_available_epoch: Math.floor(checkinAvailableDateTime.toSeconds()),
+      checkin_boot_epoch: Math.floor(ruleFireDateTime.toSeconds())
+    };
+
     const eventBridge = new EventBridge.EventBridgeClient({});
 
     // Don't schedule a checkin if it's already scheduled.
@@ -96,17 +98,9 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     // already a rule with this name to determine if the checkin is already scheduled.
 
     const ruleExists = await doesRuleExist(eventBridge, ruleName);
-
     if (ruleExists) {
-      const result: AWSLambda.APIGatewayProxyResult = {
-        statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-        headers: ResponseUtils.getStandardResponseHeaders(),
-        body: JSON.stringify({
-          error: 'Checkin already scheduled',
-          error_code: 'checkin_already_scheduled'
-        })
-      };
-      return result;
+      alreadyScheduledCheckinTimes.push(checkinTime);
+      continue;
     }
 
     // create the rule
@@ -131,13 +125,15 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
       targetArn: process.env.SCHEDULED_CHECKIN_READY_QUEUE_ARN
     });
 
-    const checkinTime: CheckinTime = {
-      checkin_available_epoch: Math.floor(checkinAvailableDateTime.toSeconds()),
-      checkin_boot_epoch: Math.floor(ruleFireDateTime.toSeconds())
-    };
-
-    responseBody.data.checkin_times.push(checkinTime);
+    addedCheckinTimes.push(checkinTime);
   }
+
+  const responseBody: ResponseBody = {
+    data: {
+      added_checkin_times: addedCheckinTimes,
+      already_scheduled_checkin_times: alreadyScheduledCheckinTimes
+    }
+  };
 
   const result: AWSLambda.APIGatewayProxyResult = {
     statusCode: HttpStatus.OK,
@@ -190,6 +186,15 @@ interface CheckinTime {
 
 interface ResponseBody {
   data: {
-    checkin_times: CheckinTime[];
+    /**
+     * The checkins added by this request.
+     * There can be more than one because a reservation can have multiple legs.
+     */
+    added_checkin_times: CheckinTime[];
+    /**
+     * The checkins that were already scheduled and which this request made no changes to.
+     * There can be more than one because a reservation can have multiple legs.
+     */
+    already_scheduled_checkin_times: CheckinTime[];
   };
 }
