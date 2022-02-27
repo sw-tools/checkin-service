@@ -10,7 +10,7 @@ import * as process from 'process';
  * @example ```sh
  * npm run compile
  *
- * REGION=us-west-2 API_PREFIX=your_given_api_gateway_prefix AUTHORIZER_TOKEN=your_chosen_token node ./dist/scripts/lambda/schedule-checkin.ts CONFIRMATION_NUMBER FIRST_NAME LAST_NAME
+ * REGION=us-west-2 API_PREFIX=your_given_api_gateway_prefix AUTHORIZER_TOKEN=your_chosen_token node ./dist/scripts/lambda/schedule-checkin.js CONFIRMATION_NUMBER FIRST_NAME LAST_NAME
  * ```
  */
 /* eslint-enable max-len */
