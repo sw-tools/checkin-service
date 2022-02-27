@@ -6,18 +6,14 @@ import * as Luxon from 'luxon';
 import * as process from 'process';
 import { doesRuleExist, putRule, putTarget } from '../lib/create-eventbridge-rule';
 import * as CronUtils from '../lib/cron-utils';
-import * as Reservation from '../lib/reservation';
+import { Reservation } from '../lib/reservation';
 import * as ResponseUtils from '../lib/response-utils';
 import * as Queue from '../lib/scheduled-checkin-ready-queue';
 import * as SwClient from '../lib/sw-client';
 import * as Timezone from '../lib/timezones';
 
 interface RequestBody {
-  data: {
-    confirmation_number: string;
-    first_name: string;
-    last_name: string;
-  };
+  data: Reservation;
 }
 
 /**
@@ -57,11 +53,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     return result;
   }
 
-  const reservation: Reservation.Reservation = {
-    confirmation_number: requestBody.data.confirmation_number,
-    first_name: requestBody.data.first_name,
-    last_name: requestBody.data.last_name
-  };
+  const reservation: Reservation = requestBody.data;
 
   const allDepartureDates = await findAllDepartureLegs(reservation);
 
@@ -155,7 +147,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
   return result;
 }
 
-async function findAllDepartureLegs(reservation: Reservation.Reservation) {
+async function findAllDepartureLegs(reservation: Reservation) {
   const body = await SwClient.getReservation(reservation);
 
   const validLegs = [];
