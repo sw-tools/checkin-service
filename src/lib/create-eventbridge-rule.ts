@@ -38,3 +38,20 @@ export function putTarget(input: PutTargetInput) {
 
   return input.eventBridge.send(putTargetsCommand);
 }
+
+export async function doesRuleExist(eventBridge: EventBridge.EventBridgeClient, ruleName: string) {
+  const getRuleCommand = new EventBridge.DescribeRuleCommand({
+    Name: ruleName
+  });
+
+  try {
+    await eventBridge.send(getRuleCommand);
+  } catch (error) {
+    if (error.name === 'ResourceNotFoundException') {
+      return false;
+    }
+    throw error;
+  }
+
+  return true;
+}

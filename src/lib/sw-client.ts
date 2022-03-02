@@ -2,6 +2,11 @@ import * as Got from 'got';
 import * as Uuid from 'uuid';
 import { Reservation } from '../lib/reservation';
 
+/**
+ * @todo investigate why this function sometimes throws a 403 error. It happens many times in a row
+ * for a period of time, and then resolves itself. It seems to start after several requests are sent
+ * quickly. Maybe the API is throttling us? Not sure why that would be indicated by a 403 error.
+ */
 export async function getReservation(reservation: Reservation) {
   type ExistingReservation = {
     bounds: {
@@ -51,7 +56,6 @@ export async function loadJsonPage<SuccessResponse>(input: LoadJsonPageInput) {
 
   for (const [key, value] of Object.entries(response)) {
     if (key.endsWith('Page')) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return <SuccessResponse>value;
     }
   }

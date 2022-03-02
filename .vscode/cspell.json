@@ -22,8 +22,12 @@
   ],
   "ignoreWords": [
     "checkedin",
+    "checkins",
+    "confnum",
     "eqeqeq",
+    "firstname",
     "iatafilter",
+    "lastname",
     "laxlga",
     "mweb",
     "requestfinished",
