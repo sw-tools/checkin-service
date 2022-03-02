@@ -14,25 +14,21 @@ import * as process from 'process';
  */
 /* eslint-enable max-len */
 async function main() {
-  try {
-    const result = await Got.put(
-      `https://${process.env.API_PREFIX}.execute-api.${process.env.REGION}.amazonaws.com/prod/v1/checkin-service/checkin`,
-      {
-        headers: { token: process.env.AUTHORIZER_TOKEN },
-        json: {
-          data: {
-            confirmation_number: process.argv[2],
-            first_name: process.argv[3],
-            last_name: process.argv[4]
-          }
+  const result = await Got.put(
+    `https://${process.env.API_PREFIX}.execute-api.${process.env.REGION}.amazonaws.com/prod/v1/checkin-service/checkin`,
+    {
+      headers: { token: process.env.AUTHORIZER_TOKEN },
+      json: {
+        data: {
+          confirmation_number: process.argv[2],
+          first_name: process.argv[3],
+          last_name: process.argv[4]
         }
       }
-    ).json();
+    }
+  ).json();
 
-    console.log('result', JSON.stringify(result, null, 2));
-  } catch (error) {
-    console.error(error.response?.body);
-  }
+  console.log('result', JSON.stringify(result, null, 2));
 }
 
 main().catch(console.error);
