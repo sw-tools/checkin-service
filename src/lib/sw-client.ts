@@ -56,7 +56,6 @@ export async function loadJsonPage<SuccessResponse>(input: LoadJsonPageInput) {
 
   for (const [key, value] of Object.entries(response)) {
     if (key.endsWith('Page')) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return <SuccessResponse>value;
     }
   }
