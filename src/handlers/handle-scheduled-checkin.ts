@@ -39,10 +39,14 @@ async function handleInternal(event: AWSLambda.SQSEvent) {
   // TODO: is the message nested within the EventBridge message that triggered this message?
   assert(Queue.isMessage(body), 'Invalid message');
 
-  const basicHeaders = await SwClient.getBasicHeaders();
-  const advancedHeaders = await SwGenerateHeaders.generateHeaders(body.reservation);
-
+  const basicHeaders = await getHeadersWithRetry(
+    () => SwClient.getBasicHeaders(), "basic headers", 10);
+	  
   console.debug('basicHeaders', basicHeaders);
+		
+  const advancedHeaders = await getHeadersWithRetry(
+    () => SwGenerateHeaders.generateHeaders(body.reservation), "advanced headers", 10);
+
   console.debug('advancedHeaders', advancedHeaders);
 
   const checkinDateTime = Luxon.DateTime.fromSeconds(body.checkin_available_epoch);
@@ -118,4 +122,24 @@ function adjustMessageVisibilityTimeout(input: AdjustMessageVisibilityTimeoutInp
   });
 
   return client.send(command);
+}
+
+async function getHeadersWithRetry<HeaderType>(func: () => Promise<HeaderType>,
+  headerName: string, maxRetries: int)
+{
+  const waitMs = util.promisify(setTimeout);
+  while(true)
+  {
+    try{	
+	  const headers = await func();
+	  return headers;
+    }
+    catch(error){
+	  if(maxRetries <= 0)
+	    throw error;
+	  console.debug(`Failed getting ${headerName}.  Retrying in 5s...\nException details: ${error}`)
+	  await waitMs(5000);
+	  maxRetries--;
+    }
+  }
 }
