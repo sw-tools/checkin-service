@@ -4,8 +4,8 @@ import assert from 'assert';
 import console from 'console';
 import * as Luxon from 'luxon';
 import process from 'process';
-import { putRule, putTarget } from '../../lib/create-eventbridge-rule';
 import { generateCronExpressionUtc } from '../../lib/cron-utils';
+import { putRule, putTarget } from '../../lib/eventbridge-checkin-rules-new';
 import { Reservation } from '../../lib/reservation';
 import * as Queue from '../../lib/scheduled-checkin-ready-queue';
 
