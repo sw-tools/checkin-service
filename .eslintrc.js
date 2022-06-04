@@ -99,21 +99,7 @@ const config = {
     'no-cond-assign': ['error', 'always'],
     eqeqeq: ['error', 'always'],
     'no-throw-literal': 'off',
-    '@typescript-eslint/no-throw-literal': ['error'],
-    // styles: minimal - handled by prettier wherever possible
-    'max-len': [
-      'error',
-      100,
-      2,
-      {
-        ignoreUrls: true,
-        ignoreComments: false,
-        ignoreTrailingComments: false,
-        ignoreRegExpLiterals: false,
-        ignoreStrings: false,
-        ignoreTemplateLiterals: false
-      }
-    ]
+    '@typescript-eslint/no-throw-literal': ['error']
   }
 };
 
