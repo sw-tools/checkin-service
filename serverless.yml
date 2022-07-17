@@ -93,6 +93,25 @@ functions:
           arn: !GetAtt SqsScheduledCheckinReadyQueue.Arn
           batchSize: 1
 
+  HandleGetScheduledCheckins:
+    handler: src/handlers/handle-get-scheduled-checkins.handle
+    description: Handle a request to get scheduled checkins
+    timeout: 30
+    events:
+      - http:
+          method: get
+          path: v1/checkin-service/checkins
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - token
+          authorizer:
+            name: Authorizer
+            identitySource: method.request.header.token
+            resultTtlInSeconds: 0
+            type: request
+
 resources:
   Resources:
     SqsScheduledCheckinReadyQueue:

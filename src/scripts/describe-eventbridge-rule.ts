@@ -1,7 +1,7 @@
 import * as EventBridge from '@aws-sdk/client-eventbridge';
 import { fromIni } from '@aws-sdk/credential-provider-ini';
 import console from 'console';
-import { doesRuleExist } from '../lib/eventbridge-checkin-rules-new';
+import { doesRuleExist } from '../lib/eventbridge-checkin-rules';
 
 async function main() {
   const eventBridge = new EventBridge.EventBridge({

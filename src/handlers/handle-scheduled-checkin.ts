@@ -69,6 +69,9 @@ async function handleInternal(event: AWSLambda.SQSEvent) {
     Luxon.DateTime.now().toLocaleString(Luxon.DateTime.DATETIME_FULL_WITH_SECONDS)
   );
 
+  // Retrieve data necessary to perform the checkin. This is where we really pound the API. After
+  // we get a response indicating that the checkin is ready, it's smooth sailing to actually
+  // perform the checkin.
   let data;
   try {
     data = await CheckIn.makeFetchCheckinDataAttempts({
@@ -92,6 +95,8 @@ async function handleInternal(event: AWSLambda.SQSEvent) {
     Luxon.DateTime.now().toLocaleString(Luxon.DateTime.DATETIME_FULL_WITH_SECONDS)
   );
 
+  // Perform the checkin. Since we've already gotten a response indicating that the checkin is
+  // ready, we only need to make one request.
   const result = await SwClient.loadJsonPage<CheckIn.CheckinSuccessfulResponse>({
     url: `${SwClient.getBaseUrl()}/mobile-air-operations${data['_links'].checkIn.href}`,
     json: data['_links'].checkIn.body,

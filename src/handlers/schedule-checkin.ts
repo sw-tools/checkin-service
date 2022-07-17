@@ -5,8 +5,9 @@ import HttpStatus from 'http-status';
 import * as Luxon from 'luxon';
 import * as process from 'process';
 import * as util from 'util';
+import { CheckinTime } from '../lib/checkin-time';
 import * as CronUtils from '../lib/cron-utils';
-import { doesRuleExist, putRule, putTarget } from '../lib/eventbridge-checkin-rules-new';
+import { doesRuleExist, putRule, putTarget } from '../lib/eventbridge-checkin-rules';
 import { Reservation } from '../lib/reservation';
 import * as ResponseUtils from '../lib/response-utils';
 import * as Queue from '../lib/scheduled-checkin-ready-queue';
@@ -96,8 +97,8 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     // TODO: hash first name, last name, and confirmation number into a single string
     const ruleName =
       process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX +
-      `${reservation.confirmation_number}-${reservation.first_name}-` +
-      `${reservation.last_name}-${ruleFireDateTime.toSeconds()}`;
+      `${reservation.first_name}-${reservation.last_name}-` +
+      `${reservation.confirmation_number}-${ruleFireDateTime.toSeconds()}`;
 
     const checkinTime: CheckinTime = {
       checkin_available_epoch: Math.floor(checkinAvailableDateTime.toSeconds()),
@@ -197,11 +198,6 @@ function isRequestBody(value: any): value is RequestBody {
     value.data.first_name &&
     value.data.last_name
   );
-}
-
-interface CheckinTime {
-  checkin_available_epoch: number;
-  checkin_boot_epoch: number;
 }
 
 interface ResponseBody {

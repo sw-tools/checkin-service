@@ -1,5 +1,8 @@
 import * as EventBridge from '@aws-sdk/client-eventbridge';
+import * as Luxon from 'luxon';
+import * as process from 'process';
 import * as Uuid from 'uuid';
+import { Reservation } from './reservation';
 import * as Queue from './scheduled-checkin-ready-queue';
 
 export interface PutRuleInput {
@@ -58,62 +61,93 @@ export async function doesRuleExist(eventBridge: EventBridge.EventBridgeClient, 
 
 export function findRulesForUser(
   eventBridge: EventBridge.EventBridgeClient,
-  confirmationNumber: string,
   firstName: string,
-  lastName: string
+  lastName: string,
+  pageSize = 100
 ) {
-  const cursor = new FindRulesForUserCursor(eventBridge, confirmationNumber, firstName, lastName);
-  return cursor;
+  const command = new EventBridge.ListRulesCommand({
+    NamePrefix: `trigger-scheduled-checkin-${firstName}-${lastName}-`,
+    Limit: pageSize
+  });
+  const cursor = new EventBridgeCursor<EventBridge.Rule>(eventBridge, command, 'Rules');
+  const asyncIterable = { [Symbol.asyncIterator]: () => cursor };
+  return asyncIterable;
 }
 
-class FindRulesForUserCursor {
+export function findTargetsOfRule(
+  eventBridge: EventBridge.EventBridgeClient,
+  ruleName: string,
+  pageSize = 100
+) {
+  const command = new EventBridge.ListTargetsByRuleCommand({
+    Rule: ruleName,
+    Limit: pageSize
+  });
+  const cursor = new EventBridgeCursor<EventBridge.Target>(eventBridge, command, 'Targets');
+  const asyncIterable = { [Symbol.asyncIterator]: () => cursor };
+  return asyncIterable;
+}
+
+class EventBridgeCursor<T> {
   private client: EventBridge.EventBridgeClient;
-  private confirmationNumber: string;
-  private firstName: string;
-  private lastName: string;
+  private command: Parameters<EventBridge.EventBridgeClient['send']>[0];
 
   private nextToken: string | undefined;
-  private _hasNext: boolean;
+  private hasNext: boolean | undefined;
+  private property: string;
 
   constructor(
     client: EventBridge.EventBridgeClient,
-    confirmationNumber: string,
-    firstName: string,
-    lastName: string
+    command: Parameters<EventBridge.EventBridgeClient['send']>[0],
+    property: string
   ) {
     this.client = client;
-    this.confirmationNumber = confirmationNumber;
-    this.firstName = firstName;
-    this.lastName = lastName;
-
-    this._hasNext = true;
+    this.command = command;
+    this.property = property;
   }
 
-  public hasNext() {
-    return this._hasNext;
-  }
+  public async next(): Promise<IteratorResult<T[]>> {
+    // the first time this is called, _hasNext will be undefined, so we need to check for that and
+    // allow the first call to proceed
+    if (!this.hasNext && this.hasNext !== undefined) return { value: [], done: true };
 
-  public async next() {
-    if (!this.hasNext()) return [];
-
-    const getRuleCommand = new EventBridge.ListRulesCommand({
-      NamePrefix: `trigger-scheduled-checkin-${this.confirmationNumber}-${this.firstName}-${this.lastName}-`,
-      Limit: 100
-    });
     if (this.nextToken) {
-      getRuleCommand.input.NextToken = this.nextToken;
+      // @ts-ignore TODO: get the type of this.command set up correctly
+      this.command.input.NextToken = this.nextToken;
     }
 
-    const result = await this.client.send(getRuleCommand);
+    const result = await this.client.send(this.command);
 
+    // @ts-ignore TODO: get the type of this.command set up correctly
     if (result.NextToken) {
-      this._hasNext = true;
+      this.hasNext = true;
+      // @ts-ignore TODO: get the type of this.command set up correctly
       this.nextToken = result.NextToken;
     } else {
-      this._hasNext = false;
+      this.hasNext = false;
       this.nextToken = undefined;
     }
 
-    return result.Rules;
+    // @ts-ignore
+    return { value: result[this.property], done: this.hasNext };
   }
+}
+
+export function reservationToRuleName(reservation: Reservation, ruleFireDate: Date) {
+  const ruleFireDateTime = Luxon.DateTime.fromJSDate(ruleFireDate);
+  return (
+    `${process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX}-` +
+    `${reservation.first_name}-${reservation.last_name}-` +
+    `${reservation.confirmation_number}-${ruleFireDateTime.toSeconds()}`
+  );
+}
+
+export function ruleNameToReservation(name: string) {
+  const parts = name.split('-');
+  const reservation: Reservation = {
+    first_name: parts[1],
+    last_name: parts[2],
+    confirmation_number: parts[3]
+  };
+  return reservation;
 }

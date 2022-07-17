@@ -1,7 +1,7 @@
 import * as EventBridge from '@aws-sdk/client-eventbridge';
 import { fromIni } from '@aws-sdk/credential-provider-ini';
 import console from 'console';
-import { findRulesForUser } from '../lib/eventbridge-checkin-rules';
+import { findTargetsOfRule } from '../lib/eventbridge-checkin-rules';
 
 async function main() {
   const eventBridge = new EventBridge.EventBridge({
@@ -9,7 +9,10 @@ async function main() {
     credentials: fromIni({ profile: 'sw-tools' })
   });
 
-  const rulesIterator = findRulesForUser(eventBridge, 'Matthew', 'Dean');
+  const rulesIterator = findTargetsOfRule(
+    eventBridge,
+    'trigger-scheduled-checkin-2EPRPW-Matthew-Dean-1654685700'
+  );
 
   const results = [];
   for await (const rules of rulesIterator) {

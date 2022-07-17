@@ -5,7 +5,7 @@ import console from 'console';
 import * as Luxon from 'luxon';
 import process from 'process';
 import { generateCronExpressionUtc } from '../../lib/cron-utils';
-import { putRule, putTarget } from '../../lib/eventbridge-checkin-rules-new';
+import { putRule, putTarget } from '../../lib/eventbridge-checkin-rules';
 import { Reservation } from '../../lib/reservation';
 import * as Queue from '../../lib/scheduled-checkin-ready-queue';
 
