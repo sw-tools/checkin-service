@@ -43,7 +43,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 
   const eventBridge = new EventBridge.EventBridgeClient({});
 
-  const rulesIterator = findRulesForUser(eventBridge, body.data.first_name, body.data.last_name);
+  const rulesIterator = findRulesForUser(eventBridge, queryParams.user_id);
 
   const rules = [];
   for await (const pageOfRules of rulesIterator) {

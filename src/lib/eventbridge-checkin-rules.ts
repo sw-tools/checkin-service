@@ -61,12 +61,11 @@ export async function doesRuleExist(eventBridge: EventBridge.EventBridgeClient, 
 
 export function findRulesForUser(
   eventBridge: EventBridge.EventBridgeClient,
-  firstName: string,
-  lastName: string,
+  userId: string,
   pageSize = 100
 ) {
   const command = new EventBridge.ListRulesCommand({
-    NamePrefix: `trigger-scheduled-checkin-${firstName}-${lastName}-`,
+    NamePrefix: `trigger-scheduled-checkin-${userId}-`,
     Limit: pageSize
   });
   const cursor = new EventBridgeCursor<EventBridge.Rule>(eventBridge, command, 'Rules');
