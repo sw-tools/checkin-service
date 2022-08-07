@@ -6,7 +6,12 @@ import * as Luxon from 'luxon';
 import * as process from 'process';
 import { CheckinTime } from '../lib/checkin-time';
 import * as CronUtils from '../lib/cron-utils';
-import { buildRuleName, doesRuleExist, putRule, putTarget } from '../lib/eventbridge-checkin-rules';
+import {
+  composeRuleName,
+  doesRuleExist,
+  putRule,
+  putTarget
+} from '../lib/eventbridge-checkin-rules';
 import { Reservation } from '../lib/reservation';
 import * as ResponseUtils from '../lib/response-utils';
 import * as Queue from '../lib/scheduled-checkin-ready-queue';
@@ -89,7 +94,8 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
   for (const checkinAvailableDateTime of checkinAvailableDateTimes) {
     // use a checksum on the leg data to ensure that the rule name is unique and that two
     // rules for the same leg cannot be created
-    const ruleName = buildRuleName(
+    const ruleName = composeRuleName(
+      process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX,
       requestBody.data.user_id,
       reservation,
       checkinAvailableDateTime.toJSDate()

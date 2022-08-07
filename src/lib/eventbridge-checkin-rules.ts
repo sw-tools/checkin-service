@@ -138,7 +138,8 @@ class EventBridgeCursor<T> {
   }
 }
 
-export function buildRuleName(
+export function composeRuleName(
+  triggerScheduledCheckinRulePrefix: string,
   userId: string,
   reservation: Reservation,
   checkinAvailableDate: Date
@@ -149,5 +150,5 @@ export function buildRuleName(
       reservation.confirmation_number
     }-${Math.floor(checkinAvailableDateTime.toSeconds())}`
   );
-  return `${process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX}-${userId}-${crc}`;
+  return `${triggerScheduledCheckinRulePrefix}-${userId}-${crc}`;
 }

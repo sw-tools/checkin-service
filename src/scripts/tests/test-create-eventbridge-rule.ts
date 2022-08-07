@@ -5,7 +5,7 @@ import console from 'console';
 import * as Luxon from 'luxon';
 import process from 'process';
 import { generateCronExpressionUtc } from '../../lib/cron-utils';
-import { putRule, putTarget } from '../../lib/eventbridge-checkin-rules';
+import { composeRuleName, putRule, putTarget } from '../../lib/eventbridge-checkin-rules';
 import { Reservation } from '../../lib/reservation';
 import * as Queue from '../../lib/scheduled-checkin-ready-queue';
 
@@ -17,6 +17,7 @@ async function main() {
   const awsAccountId = process.argv[2];
 
   const ruleFireDateTime = Luxon.DateTime.now().plus({ minutes: 1 });
+  const checkinAvailableDateTime = ruleFireDateTime.plus({ minutes: 5 });
 
   const cronExpression = generateCronExpressionUtc(ruleFireDateTime.toJSDate());
 
@@ -28,9 +29,12 @@ async function main() {
 
   const userId = 'asdfafe3at4agdss';
 
-  const ruleName =
-    'trigger-scheduled-checkin-' +
-    `${userId}-${reservation.confirmation_number}-${Math.floor(ruleFireDateTime.toSeconds())}`;
+  const ruleName = composeRuleName(
+    process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX,
+    userId,
+    reservation,
+    checkinAvailableDateTime.toJSDate()
+  );
 
   const eventBridge = new EventBridge.EventBridgeClient({
     region: 'us-west-2',
@@ -41,7 +45,7 @@ async function main() {
 
   const message: Queue.Message = {
     reservation,
-    checkin_available_epoch: Math.floor(ruleFireDateTime.plus({ minutes: 5 }).toSeconds())
+    checkin_available_epoch: Math.floor(checkinAvailableDateTime.toSeconds())
   };
 
   await putTarget({
