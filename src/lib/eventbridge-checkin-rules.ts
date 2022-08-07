@@ -2,7 +2,7 @@ import * as EventBridge from '@aws-sdk/client-eventbridge';
 import * as Luxon from 'luxon';
 import * as process from 'process';
 import * as Uuid from 'uuid';
-import { computeCrc64Base16 } from './crc-utils';
+import { computeCrc32Hex } from './crc-utils';
 import { Reservation } from './reservation';
 import * as Queue from './scheduled-checkin-ready-queue';
 
@@ -145,10 +145,10 @@ export function composeRuleName(
   checkinAvailableDate: Date
 ) {
   const checkinAvailableDateTime = Luxon.DateTime.fromJSDate(checkinAvailableDate);
-  const crc = computeCrc64Base16(
+  const crc = computeCrc32Hex(
     `${reservation.first_name}-${reservation.last_name}-${
       reservation.confirmation_number
     }-${Math.floor(checkinAvailableDateTime.toSeconds())}`
   );
-  return `${triggerScheduledCheckinRulePrefix}-${userId}-${crc}`;
+  return `${triggerScheduledCheckinRulePrefix}${userId}-${crc}`;
 }

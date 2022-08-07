@@ -1,6 +1,12 @@
-import { crc64 } from 'crc64-ecma';
+import Crc32 from 'crc-32';
 
-export function computeCrc64Base16(str: string) {
-  const crc = crc64(str);
-  return crc.toString(16);
+export function computeCrc32Hex(str: string) {
+  const crc = Crc32.str(str);
+  return numberToTwosComplementHex(crc);
+}
+
+function numberToTwosComplementHex(num: number) {
+  const str = Uint32Array.of(num)[0].toString(16);
+  if (str.length % 2 === 0) return str;
+  return `0${str}`;
 }

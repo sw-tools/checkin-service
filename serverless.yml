@@ -104,7 +104,7 @@ functions:
     events:
       - http:
           method: get
-          path: v1/checkin-service/checkins/:user_id
+          path: v1/checkin-service/checkins/{user_id}
           cors:
             origin: '*'
             headers:
