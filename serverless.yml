@@ -28,6 +28,10 @@ provider:
           Resource: arn:aws:events:${self:provider.region}:${aws:accountId}:rule/${self:custom.rule_prefixes.trigger_scheduled_checkin}*
         - Effect: Allow
           Action:
+            - events:ListRules
+          Resource: arn:aws:events:${self:provider.region}:${aws:accountId}:rule/*
+        - Effect: Allow
+          Action:
             - sqs:*
           Resource: !GetAtt SqsScheduledCheckinReadyQueue.Arn
 

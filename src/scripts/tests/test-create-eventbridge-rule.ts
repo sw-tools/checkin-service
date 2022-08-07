@@ -9,6 +9,9 @@ import { putRule, putTarget } from '../../lib/eventbridge-checkin-rules';
 import { Reservation } from '../../lib/reservation';
 import * as Queue from '../../lib/scheduled-checkin-ready-queue';
 
+/**
+ * Create an eventbridge rule and a target for it.
+ */
 async function main() {
   assert(process.argv.length === 3, 'Invalid parameters');
   const awsAccountId = process.argv[2];
@@ -18,15 +21,16 @@ async function main() {
   const cronExpression = generateCronExpressionUtc(ruleFireDateTime.toJSDate());
 
   const reservation: Reservation = {
-    confirmation_number: '12345',
+    confirmation_number: 'A12345',
     first_name: 'John',
     last_name: 'Doe'
   };
 
+  const userId = 'asdfafe3at4agdss';
+
   const ruleName =
     'trigger-scheduled-checkin-' +
-    `${reservation.confirmation_number}-${reservation.first_name}-` +
-    `${reservation.last_name}-${ruleFireDateTime.toSeconds()}`;
+    `${userId}-${reservation.confirmation_number}-${Math.floor(ruleFireDateTime.toSeconds())}`;
 
   const eventBridge = new EventBridge.EventBridgeClient({
     region: 'us-west-2',

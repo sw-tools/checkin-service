@@ -2,6 +2,7 @@ import * as EventBridge from '@aws-sdk/client-eventbridge';
 import * as Luxon from 'luxon';
 import * as process from 'process';
 import * as Uuid from 'uuid';
+import { computeCrc64Base16 } from './crc-utils';
 import { Reservation } from './reservation';
 import * as Queue from './scheduled-checkin-ready-queue';
 
@@ -59,13 +60,18 @@ export async function doesRuleExist(eventBridge: EventBridge.EventBridgeClient, 
   return true;
 }
 
+/**
+ * Find all rules that start with the trigger scheduled checkin prefix and the user's id.
+ * Since a user can schedule checkins for other people, we don't check for the user's name.
+ */
 export function findRulesForUser(
   eventBridge: EventBridge.EventBridgeClient,
   userId: string,
   pageSize = 100
 ) {
+  const prefix = `${process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX}-${userId}`;
   const command = new EventBridge.ListRulesCommand({
-    NamePrefix: `trigger-scheduled-checkin-${userId}-`,
+    NamePrefix: prefix,
     Limit: pageSize
   });
   const cursor = new EventBridgeCursor<EventBridge.Rule>(eventBridge, command, 'Rules');
@@ -132,21 +138,16 @@ class EventBridgeCursor<T> {
   }
 }
 
-export function reservationToRuleName(reservation: Reservation, ruleFireDate: Date) {
-  const ruleFireDateTime = Luxon.DateTime.fromJSDate(ruleFireDate);
-  return (
-    `${process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX}-` +
-    `${reservation.first_name}-${reservation.last_name}-` +
-    `${reservation.confirmation_number}-${ruleFireDateTime.toSeconds()}`
+export function buildRuleName(
+  userId: string,
+  reservation: Reservation,
+  checkinAvailableDate: Date
+) {
+  const checkinAvailableDateTime = Luxon.DateTime.fromJSDate(checkinAvailableDate);
+  const crc = computeCrc64Base16(
+    `${reservation.first_name}-${reservation.last_name}-${
+      reservation.confirmation_number
+    }-${Math.floor(checkinAvailableDateTime.toSeconds())}`
   );
-}
-
-export function ruleNameToReservation(name: string) {
-  const parts = name.split('-');
-  const reservation: Reservation = {
-    first_name: parts[1],
-    last_name: parts[2],
-    confirmation_number: parts[3]
-  };
-  return reservation;
+  return `${process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX}-${userId}-${crc}`;
 }
