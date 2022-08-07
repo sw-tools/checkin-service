@@ -11,7 +11,7 @@ async function main() {
 
   const rulesIterator = findTargetsOfRule(
     eventBridge,
-    'trigger-scheduled-checkin-2EPRPW-Matthew-Dean-1654685700'
+    'trigger-checkin-2EPRPW-Matthew-Dean-1654685700'
   );
 
   const results = [];

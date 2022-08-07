@@ -57,7 +57,7 @@ custom:
         # included in chrome_aws_lambda layer
         - puppeteer-core
   rule_prefixes:
-    trigger_scheduled_checkin: trigger-scheduled-checkin-
+    trigger_scheduled_checkin: trigger-checkin-
 
 functions:
   Authorizer:

@@ -11,7 +11,7 @@ async function main() {
 
   const result = await doesRuleExist(
     eventBridge,
-    'trigger-scheduled-checkin-CONFNUM-FIRSTNAME-LASTNAME-1647915900'
+    'trigger-checkin-CONFNUM-FIRSTNAME-LASTNAME-1647915900'
   );
 
   console.log(result);
