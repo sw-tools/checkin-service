@@ -19,7 +19,10 @@ import * as SwClient from '../lib/sw-client';
 import * as Timezone from '../lib/timezones';
 
 interface RequestBody {
-  data: Reservation & { user_id: string };
+  data: {
+    reservation: Reservation;
+    user_id: string;
+  };
 }
 
 /**
@@ -62,7 +65,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 
   // find and validate departure legs
 
-  const reservation: Reservation = requestBody.data;
+  const reservation: Reservation = requestBody.data.reservation;
   const allDepartureDates = await findAllDepartureLegs(reservation);
   if (allDepartureDates.error) {
     const result: AWSLambda.APIGatewayProxyResult = {
@@ -126,7 +129,11 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 
     // have the eventbridge rule send an sqs message to the scheduled-checkin-ready queue
     const message: Queue.Message = {
-      reservation,
+      reservation: {
+        confirmation_number: reservation.confirmation_number,
+        first_name: reservation.first_name,
+        last_name: reservation.last_name
+      },
       checkin_available_epoch: checkinAvailableDateTime.toSeconds()
     };
     await putTarget({
@@ -191,9 +198,10 @@ function isRequestBody(value: any): value is RequestBody {
     typedValue &&
     typedValue.data &&
     typeof typedValue.data.user_id === 'string' &&
-    typeof typedValue.data.confirmation_number === 'string' &&
-    typeof typedValue.data.first_name === 'string' &&
-    typeof typedValue.data.last_name === 'string'
+    typeof typedValue.data.reservation &&
+    typeof typedValue.data.reservation.confirmation_number === 'string' &&
+    typeof typedValue.data.reservation.first_name === 'string' &&
+    typeof typedValue.data.reservation.last_name === 'string'
   );
 }
 

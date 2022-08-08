@@ -9,7 +9,7 @@ async function main() {
     credentials: fromIni({ profile: 'sw-tools' })
   });
 
-  const rulesIterator = findRulesForUser(eventBridge, 'asdf');
+  const rulesIterator = findRulesForUser(eventBridge, 'trigger-checkin-', 'asdf');
 
   const results = [];
   for await (const rules of rulesIterator) {

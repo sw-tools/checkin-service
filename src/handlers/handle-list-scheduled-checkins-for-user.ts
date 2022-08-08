@@ -1,10 +1,12 @@
 import * as EventBridge from '@aws-sdk/client-eventbridge';
 import console from 'console';
 import HttpStatus from 'http-status';
+import process from 'process';
 import { CheckinTime } from '../lib/checkin-time';
 import { findRulesForUser, findTargetsOfRule } from '../lib/eventbridge-checkin-rules';
 import { Reservation } from '../lib/reservation';
 import { getStandardResponseHeaders } from '../lib/response-utils';
+import * as Queue from '../lib/scheduled-checkin-ready-queue';
 
 type RequestPathParams = {
   user_id: string;
@@ -48,7 +50,11 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 
   const eventBridge = new EventBridge.EventBridgeClient({});
 
-  const rulesIterator = findRulesForUser(eventBridge, pathParams.user_id);
+  const rulesIterator = findRulesForUser(
+    eventBridge,
+    process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX,
+    pathParams.user_id
+  );
   const rules = [];
   for await (const pageOfRules of rulesIterator) {
     rules.push(...pageOfRules);
@@ -64,12 +70,13 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
   }
 
   const checkins = firstTargetOfEachRule.map(target => {
-    const reservation = JSON.parse(target.Input) as Reservation;
+    const input = JSON.parse(target.Input) as Queue.Message;
+    console.log('input', input);
     const checkin: Checkin = {
       status: 'scheduled',
-      confirmation_number: reservation.confirmation_number,
-      first_name: reservation.first_name,
-      last_name: reservation.last_name,
+      confirmation_number: input.reservation.confirmation_number,
+      first_name: input.reservation.first_name,
+      last_name: input.reservation.last_name,
       checkin_available_epoch: 0,
       checkin_boot_epoch: 0
     };

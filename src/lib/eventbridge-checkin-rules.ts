@@ -1,6 +1,5 @@
 import * as EventBridge from '@aws-sdk/client-eventbridge';
 import * as Luxon from 'luxon';
-import * as process from 'process';
 import * as Uuid from 'uuid';
 import { computeCrc32Hex } from './crc-utils';
 import { Reservation } from './reservation';
@@ -66,10 +65,11 @@ export async function doesRuleExist(eventBridge: EventBridge.EventBridgeClient, 
  */
 export function findRulesForUser(
   eventBridge: EventBridge.EventBridgeClient,
+  triggerScheduledCheckinRulePrefix: string,
   userId: string,
   pageSize = 100
 ) {
-  const prefix = `${process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX}-${userId}`;
+  const prefix = `${composeUserPrefixForRule(triggerScheduledCheckinRulePrefix, userId)}`;
   const command = new EventBridge.ListRulesCommand({
     NamePrefix: prefix,
     Limit: pageSize
@@ -150,5 +150,9 @@ export function composeRuleName(
       reservation.confirmation_number
     }-${Math.floor(checkinAvailableDateTime.toSeconds())}`
   );
-  return `${triggerScheduledCheckinRulePrefix}${userId}-${crc}`;
+  return `${composeUserPrefixForRule(triggerScheduledCheckinRulePrefix, userId)}-${crc}`;
+}
+
+function composeUserPrefixForRule(triggerScheduledCheckinRulePrefix: string, userId: string) {
+  return `${triggerScheduledCheckinRulePrefix}${userId}`;
 }
