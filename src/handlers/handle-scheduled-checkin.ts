@@ -42,9 +42,6 @@ async function handleInternal(event: AWSLambda.SQSEvent) {
   const basicHeaders = await SwClient.getBasicHeaders();
   const advancedHeaders = await SwGenerateHeaders.generateHeaders(body.reservation);
 
-  console.debug('basicHeaders', basicHeaders);
-  console.debug('advancedHeaders', advancedHeaders);
-
   const checkinDateTime = Luxon.DateTime.fromSeconds(body.checkin_available_epoch);
 
   // start trying to check in 5 seconds before checkin time
@@ -54,7 +51,7 @@ async function handleInternal(event: AWSLambda.SQSEvent) {
 
   // this is the normal flow; we expect to have some extra time to wait
   if (millisUntilTryingCheckin > 0) {
-    console.debug(
+    console.log(
       'Waiting %d seconds before checking in',
       Math.floor(millisUntilTryingCheckin / 1000)
     );

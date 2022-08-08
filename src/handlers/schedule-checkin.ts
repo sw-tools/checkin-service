@@ -126,8 +126,6 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     const cronExpression = CronUtils.generateCronExpressionUtc(ruleFireDateTime.toJSDate());
     await putRule({ eventBridge, ruleName, cronExpression });
 
-    console.debug('leg.departureTimezone', leg.departureTimezone);
-
     // have the eventbridge rule send an sqs message to the scheduled-checkin-ready queue
     const message: Queue.Message = {
       reservation: {
