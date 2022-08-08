@@ -91,10 +91,9 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
 
   const addedCheckinTimes = [];
   const alreadyScheduledCheckinTimes = [];
-  const checkinAvailableDateTimes = allDepartureDates.legs.map(date =>
-    Luxon.DateTime.fromJSDate(date).minus({ hours: 24 })
-  );
-  for (const checkinAvailableDateTime of checkinAvailableDateTimes) {
+  for (const leg of allDepartureDates.legs) {
+    const checkinAvailableDateTime = Luxon.DateTime.fromJSDate(leg.date).minus({ hours: 24 });
+
     // use a checksum on the leg data to ensure that the rule name is unique and that two
     // rules for the same leg cannot be created
     const ruleName = composeRuleName(
@@ -127,6 +126,8 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     const cronExpression = CronUtils.generateCronExpressionUtc(ruleFireDateTime.toJSDate());
     await putRule({ eventBridge, ruleName, cronExpression });
 
+    console.debug('leg.departureTimezone', leg.departureTimezone);
+
     // have the eventbridge rule send an sqs message to the scheduled-checkin-ready queue
     const message: Queue.Message = {
       reservation: {
@@ -134,7 +135,8 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
         first_name: reservation.first_name,
         last_name: reservation.last_name
       },
-      checkin_available_epoch: checkinAvailableDateTime.toSeconds()
+      checkin_available_epoch: checkinAvailableDateTime.toSeconds(),
+      departure_timezone: leg.departureTimezone
     };
     await putTarget({
       eventBridge,
@@ -174,7 +176,6 @@ async function findAllDepartureLegs(reservation: Reservation) {
   }
 
   const validLegs = [];
-
   for (const leg of body['bounds']) {
     const airportTimezone = await Timezone.fetchAirportTimezone(leg.departureAirport.code);
 
@@ -184,12 +185,12 @@ async function findAllDepartureLegs(reservation: Reservation) {
       zone: airportTimezone
     });
 
-    validLegs.push(takeoffDateTime);
+    validLegs.push({
+      date: takeoffDateTime.toJSDate(),
+      departureTimezone: airportTimezone
+    });
   }
-
-  return {
-    legs: validLegs.map(legs => legs.toJSDate())
-  };
+  return { legs: validLegs };
 }
 
 function isRequestBody(value: any): value is RequestBody {

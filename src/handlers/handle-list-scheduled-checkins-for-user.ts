@@ -1,8 +1,8 @@
 import * as EventBridge from '@aws-sdk/client-eventbridge';
+import type * as AWSLambda from 'aws-lambda';
 import console from 'console';
 import HttpStatus from 'http-status';
 import process from 'process';
-import { CheckinTime } from '../lib/checkin-time';
 import { findRulesForUser, findTargetsOfRule } from '../lib/eventbridge-checkin-rules';
 import { Reservation } from '../lib/reservation';
 import { getStandardResponseHeaders } from '../lib/response-utils';
@@ -74,11 +74,13 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     console.log('input', input);
     const checkin: Checkin = {
       status: 'scheduled',
-      confirmation_number: input.reservation.confirmation_number,
-      first_name: input.reservation.first_name,
-      last_name: input.reservation.last_name,
-      checkin_available_epoch: 0,
-      checkin_boot_epoch: 0
+      reservation: {
+        confirmation_number: input.reservation.confirmation_number,
+        first_name: input.reservation.first_name,
+        last_name: input.reservation.last_name
+      },
+      checkin_available_epoch: input.checkin_available_epoch,
+      departure_timezone: input.departure_timezone
     };
     return checkin;
   });
@@ -99,6 +101,9 @@ function isPathParams(value: any): value is RequestPathParams {
   return typeof typedValue.user_id === 'string';
 }
 
-interface Checkin extends Reservation, CheckinTime {
+interface Checkin {
   status: 'scheduled';
+  reservation: Reservation;
+  checkin_available_epoch: number;
+  departure_timezone: string;
 }
