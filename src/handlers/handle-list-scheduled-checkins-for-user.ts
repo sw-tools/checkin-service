@@ -8,7 +8,7 @@ import { Reservation } from '../lib/reservation';
 import { getStandardResponseHeaders } from '../lib/response-utils';
 import * as Queue from '../lib/scheduled-checkin-ready-queue';
 
-type RequestPathParams = {
+type RequestQueryParams = {
   user_id: string;
 };
 
@@ -38,8 +38,8 @@ export async function handle(event: AWSLambda.APIGatewayProxyEvent) {
 async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
   // validate request
 
-  const pathParams = event.pathParameters;
-  if (!isPathParams(pathParams)) {
+  const queryParams = event.queryStringParameters;
+  if (!isQueryParams(queryParams)) {
     const result: AWSLambda.APIGatewayProxyResult = {
       statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
       headers: getStandardResponseHeaders(),
@@ -53,7 +53,7 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
   const rulesIterator = findRulesForUser(
     eventBridge,
     process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX,
-    pathParams.user_id
+    queryParams.user_id
   );
   const rules = [];
   for await (const pageOfRules of rulesIterator) {
@@ -96,8 +96,8 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
   return result;
 }
 
-function isPathParams(value: any): value is RequestPathParams {
-  const typedValue = value as RequestPathParams;
+function isQueryParams(value: any): value is RequestQueryParams {
+  const typedValue = value as RequestQueryParams;
   return typeof typedValue.user_id === 'string';
 }
 
