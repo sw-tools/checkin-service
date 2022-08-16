@@ -17,7 +17,7 @@ interface ResponseBody {
 }
 
 /**
- * Check the user into a single flight.
+ * List all Scheduled Checkins for a user given a User ID.
  */
 export async function handle(event: AWSLambda.APIGatewayProxyEvent) {
   let result: AWSLambda.APIGatewayProxyResult;
