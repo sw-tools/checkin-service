@@ -28,6 +28,10 @@ provider:
           Resource: arn:aws:events:${self:provider.region}:${aws:accountId}:rule/${self:custom.rule_prefixes.trigger_scheduled_checkin}*
         - Effect: Allow
           Action:
+            - events:ListRules
+          Resource: arn:aws:events:${self:provider.region}:${aws:accountId}:rule/*
+        - Effect: Allow
+          Action:
             - sqs:*
           Resource: !GetAtt SqsScheduledCheckinReadyQueue.Arn
 
@@ -53,7 +57,7 @@ custom:
         # included in chrome_aws_lambda layer
         - puppeteer-core
   rule_prefixes:
-    trigger_scheduled_checkin: trigger-scheduled-checkin-
+    trigger_scheduled_checkin: trigger-checkin-
 
 functions:
   Authorizer:
@@ -92,6 +96,25 @@ functions:
       - sqs:
           arn: !GetAtt SqsScheduledCheckinReadyQueue.Arn
           batchSize: 1
+
+  HandleListScheduledCheckinsForUser:
+    handler: src/handlers/handle-list-scheduled-checkins-for-user.handle
+    description: Handle a request to get scheduled checkins owned by a user id
+    timeout: 30
+    events:
+      - http:
+          method: get
+          path: v1/checkin-service/checkins
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - token
+          authorizer:
+            name: Authorizer
+            identitySource: method.request.header.token
+            resultTtlInSeconds: 0
+            type: request
 
 resources:
   Resources:

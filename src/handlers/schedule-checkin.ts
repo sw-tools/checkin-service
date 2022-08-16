@@ -4,9 +4,14 @@ import console from 'console';
 import HttpStatus from 'http-status';
 import * as Luxon from 'luxon';
 import * as process from 'process';
-import * as util from 'util';
-import { doesRuleExist, putRule, putTarget } from '../lib/create-eventbridge-rule';
+import { CheckinTime } from '../lib/checkin-time';
 import * as CronUtils from '../lib/cron-utils';
+import {
+  composeRuleName,
+  doesRuleExist,
+  putRule,
+  putTarget
+} from '../lib/eventbridge-checkin-rules';
 import { Reservation } from '../lib/reservation';
 import * as ResponseUtils from '../lib/response-utils';
 import * as Queue from '../lib/scheduled-checkin-ready-queue';
@@ -14,7 +19,10 @@ import * as SwClient from '../lib/sw-client';
 import * as Timezone from '../lib/timezones';
 
 interface RequestBody {
-  data: Reservation;
+  data: {
+    reservation: Reservation;
+    user_id: string;
+  };
 }
 
 /**
@@ -43,8 +51,9 @@ export async function handle(event: AWSLambda.APIGatewayProxyEvent) {
 }
 
 async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
-  const requestBody = JSON.parse(event.body);
+  // validate request
 
+  const requestBody = JSON.parse(event.body);
   if (!isRequestBody(requestBody)) {
     const result: AWSLambda.APIGatewayProxyResult = {
       statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -54,10 +63,10 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     return result;
   }
 
-  const reservation: Reservation = requestBody.data;
+  // find and validate departure legs
 
+  const reservation: Reservation = requestBody.data.reservation;
   const allDepartureDates = await findAllDepartureLegs(reservation);
-
   if (allDepartureDates.error) {
     const result: AWSLambda.APIGatewayProxyResult = {
       statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -69,7 +78,6 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     };
     return result;
   }
-
   if (allDepartureDates.legs.length < 1) {
     const result: AWSLambda.APIGatewayProxyResult = {
       statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -79,37 +87,35 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     return result;
   }
 
-  console.debug('allDepartureDates', util.inspect(allDepartureDates, { depth: null }));
+  // create an eventbridge rule for each leg
 
   const addedCheckinTimes = [];
   const alreadyScheduledCheckinTimes = [];
+  for (const leg of allDepartureDates.legs) {
+    const checkinAvailableDateTime = Luxon.DateTime.fromJSDate(leg.date).minus({ hours: 24 });
 
-  const checkinAvailableDateTimes = allDepartureDates.legs.map(date =>
-    Luxon.DateTime.fromJSDate(date).minus({ hours: 24 })
-  );
+    // use a checksum on the leg data to ensure that the rule name is unique and that two
+    // rules for the same leg cannot be created
+    const ruleName = composeRuleName(
+      process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX,
+      requestBody.data.user_id,
+      reservation,
+      checkinAvailableDateTime.toJSDate()
+    );
 
-  for (const checkinAvailableDateTime of checkinAvailableDateTimes) {
     // Boot Lambda 5 minutes before checkin is ready. Gives time for SQS message to invoke Lambda,
     // Lambda cold start, generating advanced headers, etc.)
     const ruleFireDateTime = checkinAvailableDateTime.minus({ minutes: 5 });
-
-    // TODO: hash first name, last name, and confirmation number into a single string
-    const ruleName =
-      process.env.TRIGGER_SCHEDULED_CHECKIN_RULE_PREFIX +
-      `${reservation.confirmation_number}-${reservation.first_name}-` +
-      `${reservation.last_name}-${ruleFireDateTime.toSeconds()}`;
 
     const checkinTime: CheckinTime = {
       checkin_available_epoch: Math.floor(checkinAvailableDateTime.toSeconds()),
       checkin_boot_epoch: Math.floor(ruleFireDateTime.toSeconds())
     };
 
-    const eventBridge = new EventBridge.EventBridgeClient({});
-
     // Don't schedule a checkin if it's already scheduled.
-    // A rule's name is essentially a serialized reservation, so we can simply check if there is
+    // A rule's name is essentially a serialized departure leg, so we can simply check if there is
     // already a rule with this name to determine if the checkin is already scheduled.
-
+    const eventBridge = new EventBridge.EventBridgeClient({});
     const ruleExists = await doesRuleExist(eventBridge, ruleName);
     if (ruleExists) {
       alreadyScheduledCheckinTimes.push(checkinTime);
@@ -117,20 +123,19 @@ async function handleInternal(event: AWSLambda.APIGatewayProxyEvent) {
     }
 
     // create the rule
-
     const cronExpression = CronUtils.generateCronExpressionUtc(ruleFireDateTime.toJSDate());
-
-    console.debug('cronExpression', cronExpression);
-
     await putRule({ eventBridge, ruleName, cronExpression });
 
     // have the eventbridge rule send an sqs message to the scheduled-checkin-ready queue
-
     const message: Queue.Message = {
-      reservation,
-      checkin_available_epoch: checkinAvailableDateTime.toSeconds()
+      reservation: {
+        confirmation_number: reservation.confirmation_number,
+        first_name: reservation.first_name,
+        last_name: reservation.last_name
+      },
+      checkin_available_epoch: checkinAvailableDateTime.toSeconds(),
+      departure_timezone: leg.departureTimezone
     };
-
     await putTarget({
       eventBridge,
       ruleName,
@@ -169,7 +174,6 @@ async function findAllDepartureLegs(reservation: Reservation) {
   }
 
   const validLegs = [];
-
   for (const leg of body['bounds']) {
     const airportTimezone = await Timezone.fetchAirportTimezone(leg.departureAirport.code);
 
@@ -179,29 +183,25 @@ async function findAllDepartureLegs(reservation: Reservation) {
       zone: airportTimezone
     });
 
-    console.debug('takeoffDateTime', takeoffDateTime.toUTC().toISO());
-
-    validLegs.push(takeoffDateTime);
+    validLegs.push({
+      date: takeoffDateTime.toJSDate(),
+      departureTimezone: airportTimezone
+    });
   }
-
-  return {
-    legs: validLegs.map(legs => legs.toJSDate())
-  };
+  return { legs: validLegs };
 }
 
 function isRequestBody(value: any): value is RequestBody {
+  const typedValue = value as RequestBody;
   return !!(
-    value &&
-    value.data &&
-    value.data.confirmation_number &&
-    value.data.first_name &&
-    value.data.last_name
+    typedValue &&
+    typedValue.data &&
+    typeof typedValue.data.user_id === 'string' &&
+    typeof typedValue.data.reservation &&
+    typeof typedValue.data.reservation.confirmation_number === 'string' &&
+    typeof typedValue.data.reservation.first_name === 'string' &&
+    typeof typedValue.data.reservation.last_name === 'string'
   );
-}
-
-interface CheckinTime {
-  checkin_available_epoch: number;
-  checkin_boot_epoch: number;
 }
 
 interface ResponseBody {

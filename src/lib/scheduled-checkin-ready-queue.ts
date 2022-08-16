@@ -4,6 +4,12 @@ export interface Message {
   /** 24 hours before scheduled departure in unix epoch seconds */
   checkin_available_epoch: number;
 
+  /**
+   * IANA timezone name of the departure airport
+   * @example "America/New_York"
+   */
+  departure_timezone: string;
+
   reservation: Reservation;
 }
 

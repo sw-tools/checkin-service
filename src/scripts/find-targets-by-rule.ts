@@ -1,7 +1,7 @@
 import * as EventBridge from '@aws-sdk/client-eventbridge';
 import { fromIni } from '@aws-sdk/credential-provider-ini';
 import console from 'console';
-import { doesRuleExist } from '../lib/eventbridge-checkin-rules';
+import { findTargetsOfRule } from '../lib/eventbridge-checkin-rules';
 
 async function main() {
   const eventBridge = new EventBridge.EventBridge({
@@ -9,12 +9,17 @@ async function main() {
     credentials: fromIni({ profile: 'sw-tools' })
   });
 
-  const result = await doesRuleExist(
+  const rulesIterator = findTargetsOfRule(
     eventBridge,
-    'trigger-checkin-CONFNUM-FIRSTNAME-LASTNAME-1647915900'
+    'trigger-checkin-2EPRPW-Matthew-Dean-1654685700'
   );
 
-  console.log(result);
+  const results = [];
+  for await (const rules of rulesIterator) {
+    results.push(...rules);
+  }
+
+  console.log(JSON.stringify(results, null, 2));
 }
 
 main().catch(console.error);

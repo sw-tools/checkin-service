@@ -42,9 +42,6 @@ async function handleInternal(event: AWSLambda.SQSEvent) {
   const basicHeaders = await SwClient.getBasicHeaders();
   const advancedHeaders = await SwGenerateHeaders.generateHeaders(body.reservation);
 
-  console.debug('basicHeaders', basicHeaders);
-  console.debug('advancedHeaders', advancedHeaders);
-
   const checkinDateTime = Luxon.DateTime.fromSeconds(body.checkin_available_epoch);
 
   // start trying to check in 5 seconds before checkin time
@@ -54,7 +51,7 @@ async function handleInternal(event: AWSLambda.SQSEvent) {
 
   // this is the normal flow; we expect to have some extra time to wait
   if (millisUntilTryingCheckin > 0) {
-    console.debug(
+    console.log(
       'Waiting %d seconds before checking in',
       Math.floor(millisUntilTryingCheckin / 1000)
     );
@@ -69,6 +66,9 @@ async function handleInternal(event: AWSLambda.SQSEvent) {
     Luxon.DateTime.now().toLocaleString(Luxon.DateTime.DATETIME_FULL_WITH_SECONDS)
   );
 
+  // Retrieve data necessary to perform the checkin. This is where we really pound the API. After
+  // we get a response indicating that the checkin is ready, it's smooth sailing to actually
+  // perform the checkin.
   let data;
   try {
     data = await CheckIn.makeFetchCheckinDataAttempts({
@@ -92,6 +92,8 @@ async function handleInternal(event: AWSLambda.SQSEvent) {
     Luxon.DateTime.now().toLocaleString(Luxon.DateTime.DATETIME_FULL_WITH_SECONDS)
   );
 
+  // Perform the checkin. Since we've already gotten a response indicating that the checkin is
+  // ready, we only need to make one request.
   const result = await SwClient.loadJsonPage<CheckIn.CheckinSuccessfulResponse>({
     url: `${SwClient.getBaseUrl()}/mobile-air-operations${data['_links'].checkIn.href}`,
     json: data['_links'].checkIn.body,
