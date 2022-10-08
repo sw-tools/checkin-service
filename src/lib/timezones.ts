@@ -1,3 +1,4 @@
+/** https://raw.githubusercontent.com/hroptatyr/dateutils/tzmaps/iata.tzmap */
 const airportTimezoneMap = {
   AAA: 'Pacific/Tahiti',
   AAB: 'Australia/Brisbane',
