@@ -1,6 +1,7 @@
 import * as Got from 'got';
 import * as Uuid from 'uuid';
 import { Reservation } from '../lib/reservation';
+import { AirportCode } from './timezones';
 
 /**
  * @todo investigate why this function sometimes throws a 403 error. It happens many times in a row
@@ -11,7 +12,7 @@ export async function getReservation(reservation: Reservation) {
   type ExistingReservation = {
     bounds: {
       departureAirport: {
-        code: string;
+        code: AirportCode;
         name: string;
         state: string;
       };

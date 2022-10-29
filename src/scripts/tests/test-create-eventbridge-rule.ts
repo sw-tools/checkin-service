@@ -45,7 +45,8 @@ async function main() {
 
   const message: Queue.Message = {
     reservation,
-    checkin_available_epoch: Math.floor(checkinAvailableDateTime.toSeconds())
+    checkin_available_epoch: Math.floor(checkinAvailableDateTime.toSeconds()),
+    departure_timezone: 'America/New_York'
   };
 
   await putTarget({

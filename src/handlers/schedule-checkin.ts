@@ -16,7 +16,7 @@ import { Reservation } from '../lib/reservation';
 import * as ResponseUtils from '../lib/response-utils';
 import * as Queue from '../lib/scheduled-checkin-ready-queue';
 import * as SwClient from '../lib/sw-client';
-import * as Timezone from '../lib/timezones';
+import { getAirportTimezone } from '../lib/timezones';
 
 interface RequestBody {
   data: {
@@ -175,7 +175,7 @@ async function findAllDepartureLegs(reservation: Reservation) {
 
   const validLegs = [];
   for (const leg of body['bounds']) {
-    const airportTimezone = await Timezone.fetchAirportTimezone(leg.departureAirport.code);
+    const airportTimezone = await getAirportTimezone(leg.departureAirport.code);
 
     // TODO: consider finding a better way to turn these strings into a DateTime
     const takeoff = `${leg.departureDate} ${leg.departureTime}`;
