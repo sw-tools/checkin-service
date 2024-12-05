@@ -50,8 +50,10 @@
     "webpack-node-externals": "^3.0.0"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.521.0",
     "@aws-sdk/client-eventbridge": "^3.99.0",
     "@aws-sdk/client-sqs": "^3.99.0",
+    "@aws-sdk/lib-dynamodb": "^3.521.0",
     "@aws-sdk/smithy-client": "^3.99.0",
     "chrome-aws-lambda": "^10.1.0",
     "crc-32": "^1.2.2",
@@ -64,5 +66,9 @@
   "engines": {
     "node": "16",
     "npm": "8"
+  },
+  "volta": {
+    "node": "16.13.0",
+    "npm": "8.3.0"
   }
 }
